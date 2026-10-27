@@ -1,6 +1,6 @@
 # MeetStep: SMK 37 Pro
 
-Target: Windows VST3 in Ableton Live; standalone later.
+Target: Windows standalone. VST3 is frozen. See PROJECT_STATUS.md.
 Stock firmware preset, MIDI channels numbered 1–16.
 
 ## Pads (channel 10)
@@ -13,12 +13,12 @@ Physical order: top row left to right, then bottom row left to right.
 | 2 | 56 57 58 59 64 65 66 67 | 52 53 54 55 60 61 62 63 |
 
 Initial prototype: bank 1 maps to steps 1–16; bank 2 is reserved
-and does not edit the pattern. Future 32-step mode maps bank 2 to 17–32.
+and does not edit the pattern. Bank 2 is reserved for future pattern selection and utility commands.
 Banks switch on the hardware; incoming note numbers identify the bank.
 Positive-velocity Note On toggles a step. Note Off and zero-velocity
 Note On do not toggle. Notes on channels other than 10 select the drum
 note. Each drum note has its own pattern. Until a note is selected,
-pads do nothing. Audition and MIDI forwarding remain to be implemented.
+pads do nothing. Standalone Audition and MIDI output are implemented; see PROJECT_STATUS.md.
 
 ## Other controls
 
@@ -27,10 +27,9 @@ pads do nothing. Audition and MIDI forwarding remain to be implemented.
 - Fader bank 1: channel 1, CC 64–67.
 - Fader bank 2: channel 1, CC 68–71.
 
-Their functions are not assigned yet. LED feedback support is unknown.
-Host-synced playback and MIDI output remain to be implemented. The VST3
-editor wrapper and host-state persistence are implemented; Live validation
-remains pending.
+CC56 velocity, CC57 note length and CC63 tempo on channel 6 are planned,
+not yet implemented. LED protocol evidence is in docs/protocol; LED integration
+is pending. Standalone master clock and note output are implemented.
 
 ## Pattern editor milestone
 

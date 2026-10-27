@@ -1,11 +1,8 @@
 # MeetStep
 
-Windows VST3 drum step-sequencer project for SMK 37 Pro and Ableton Live.
-
-**Current milestone: pattern editor, not a playable sequencer yet.** The VST3
-receives MIDI for editing and stores six patterns in host state. It currently
-outputs no MIDI or sound. Host-clock playback and Live routing verification
-are still pending. No standalone application is included yet.
+Windows standalone MIDI drum sequencer for SMK 37 Pro. VST3 is frozen and
+excluded from current CI. See [current status and handoff](docs/PROJECT_STATUS.md)
+for implemented features, pending requirements and LED protocol evidence.
 
 ## Editing
 
@@ -24,46 +21,15 @@ are still pending. No standalone application is included yet.
 - First-bank pads on channel 10 toggle steps in physical row order. Second
   bank is reserved. See [controller mapping](docs/controller.md).
 
-## Build core tests (C++17, CMake 3.20+)
-
-```sh
-cmake -S . -B build
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
-```
-
-## Windows VST3 (Visual Studio 2022, Desktop development with C++)
+## Windows standalone build
 
 ```powershell
-cmake -S . -B build-plugin -DMEETSTEP_BUILD_PLUGIN=ON
-cmake --build build-plugin --config Release --parallel 2
-ctest --test-dir build-plugin -C Release --output-on-failure
+cmake -S . -B build -A x64 -DMEETSTEP_BUILD_STANDALONE=ON -DMEETSTEP_BUILD_PLUGIN=OFF -DBUILD_TESTING=OFF
+cmake --build build --config Release --target MeetStepApp --parallel 2
 ```
 
-CMake downloads pinned JUCE 8.0.6 from its official repository. Review JUCE's
-license before distribution. The VST3 bundle is in
-`build-plugin/MeetStep_artefacts/Release/VST3/MeetStep.vst3`.
-Copy the whole bundle to your configured VST3 folder and rescan Live.
-The Windows GitHub Actions workflow builds/tests and uploads this bundle;
-it has not yet been run from this workspace.
-
-Linux JUCE builds additionally need ALSA, X11/Xext/Xinerama/Xrandr/Xcursor,
-FreeType and fontconfig development packages. GUI tests may require Xvfb
-on a machine without a display. `editor_tests` writes `meetstep-editor.png`
-in its working directory after exercising mouse input and buttons.
-
-## First Windows build via GitHub
-
-Open the repository's **Actions → Windows VST3**, choose a successful run,
-and download **MeetStep-0.1.0-Windows-x64** from Artifacts. Extract the
-artifact archive and the enclosed ZIP; follow `INSTALL-WINDOWS.txt`.
-The full `MeetStep.vst3` directory must stay together. The screenshot is
-also uploaded separately as **MeetStep-editor-screenshot**.
-
-## Standalone 0.2.0
-
-The Windows package now also includes `MeetStep Standalone.exe`.
-It owns MIDI devices directly, supports multiple inputs and one output, and
-sends sequence notes plus MIDI Clock/Start/Stop/Continue as the clock master.
-See `packaging/INSTALL-WINDOWS.txt` for routing, shortcuts and limitations.
-The VST3 remains the previous editor milestone; standalone playback is separate.
+JUCE 8.0.6 is pinned in CMake. Visual Studio 2022 with C++ desktop development
+is required. GitHub Actions workflow `Windows Standalone` publishes the app;
+`SMK LED probe Windows` publishes the separate diagnostic utility.
+See [installation/routing](packaging/INSTALL-WINDOWS.txt) and
+[controller map](docs/controller.md).
