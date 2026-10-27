@@ -112,3 +112,23 @@ A separate `SMK Simple Pad Colour Windows` workflow builds the new EXE and
 requires a packaged GUI/backend smoke test before artifact upload. Local Linux
 checks do not establish successful Windows Actions execution or hardware results.
 See `tools/SMK-PAD-COLOUR.md` for user instructions.
+
+### Brightness and batch test, 0.2.0
+
+User reports the simple 0.1.0 colour test appears to work; stability is not yet
+established. New capture `all white to lights off.pcapng` independently proves
+32 brightness fields at 0x11E + (record-1)*0x4A: exactly 32 FF→00 differences,
+RGB unchanged FFFFFF, both full uploads match readback. This supersedes the
+previous uncertainty about the byte following RGB for bank 2. See
+`protocol/smk-32-brightness.md` and the extracted JSON address fixture.
+
+0.2.0 adds a single-pad brightness slider, one-pass All pads, and optional
+full/reduced alternation by record number. The slider controls one or all
+pads on a 0–255 scale (default 255). With alternation it controls the reduced
+percentage, default 80%: odd records 255, even records 204. Switching modes
+restores the previous normal/percentage slider values.
+The same accepted short-write Mido transport is retained, with one pair of
+ports per batch, ACK per byte, 100 ms spacing and stop on first error.
+128 messages take about 13 seconds. No Save. Hardware acceptance of the new
+brightness/batch behaviour remains to be checked; bank-2 physical order is
+still provisional.

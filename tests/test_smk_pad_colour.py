@@ -114,6 +114,54 @@ class ColourTests(unittest.TestCase):
             with self.assertRaises(ValueError): self.send(pad,rgb)
         self.input.open_port.assert_not_called()
 
+    def test_single_brightness_endpoints_and_midpoint(self):
+        for value in (0, 204, 255):
+            self.sent.clear()
+            send_colour('SMK IN', 'SMK OUT', 32, (255,255,255), self.cancel,
+                        self.logs.append, brightness=value, spacing=0)
+            self.assertEqual(len(self.sent), 4)
+            data=decode(self.sent[-1])[1]
+            self.assertEqual(int.from_bytes(data[1:5], 'little'), 0xA14)
+            self.assertEqual(data[-1], value)
+
+    def test_all_brightness_addresses_match_capture_and_alternate(self):
+        fixture=json.loads((ROOT/'docs/protocol/smk-32-brightness.json').read_text())
+        for alternate in (False, True):
+            self.sent.clear()
+            send_colour('SMK IN', 'SMK OUT', 7, (1,2,3), self.cancel,
+                        self.logs.append, all_pads=True, alternate=alternate,
+                        brightness=0, spacing=0)
+            self.assertEqual(len(self.sent), 128)
+            for i,change in enumerate(fixture['changes']):
+                group=[decode(w)[1] for w in self.sent[i*4:i*4+4]]
+                self.assertEqual([int.from_bytes(d[1:5],'little') for d in group],
+                                 list(range(change['address']-3,change['address']+1)))
+                self.assertEqual([d[-1] for d in group[:3]], [1,2,3])
+                self.assertEqual(group[-1][-1], (204 if i%2 else 255) if alternate else 0)
+
+    def test_alternating_slider_percentage(self):
+        for percent, expected in [(0,0),(40,102),(80,204),(100,255)]:
+            self.sent.clear()
+            send_colour('SMK IN','SMK OUT',1,(1,2,3),self.cancel,self.logs.append,
+                        all_pads=True,alternate=True,alternate_percent=percent,spacing=0)
+            levels=[decode(w)[1][-1] for w in self.sent[3::4]]
+            self.assertEqual(levels,[255,expected]*16)
+
+    def test_all_batch_stops_at_first_missing_ack(self):
+        original=self.output.send_message.side_effect
+        def send(wire):
+            if len(self.sent)==5: self.reply=None
+            original(wire)
+        self.output.send_message.side_effect=send
+        with self.assertRaises(TimeoutError):
+            send_colour('SMK IN','SMK OUT',1,(1,2,3),self.cancel,self.logs.append,
+                        all_pads=True,timeout=.03,spacing=0)
+        self.assertEqual(len(self.sent),6)
+        self.input.open_port.assert_called_once_with(0)
+        self.output.open_port.assert_called_once_with(0)
+        self.input.close_port.assert_called_once()
+        self.output.close_port.assert_called_once()
+
     def test_pre_cancelled_operation_does_not_open_ports(self):
         self.cancel.set()
         with self.assertRaises(InterruptedError): self.send()

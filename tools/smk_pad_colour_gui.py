@@ -49,6 +49,28 @@ class App:
                              orient='horizontal', command=lambda _: self.preview_colour())
             scale.pack(fill='x')
             self.controls.append(scale)
+        self.brightness = tk.IntVar(root, value=255)
+        self.all_pads = tk.BooleanVar(root, value=False)
+        self.alternate = tk.BooleanVar(root, value=False)
+        self.percent_mode = False
+        self.saved_brightness = 255
+        self.saved_percent = 80
+        modes = ttk.Frame(body)
+        modes.pack(fill='x', pady=4)
+        for label, variable in [('Все пэды', self.all_pads), ('Чередование яркости', self.alternate)]:
+            button = ttk.Checkbutton(modes, text=label, variable=variable, command=self.update_modes)
+            button.pack(side='left', padx=8)
+            self.controls.append(button)
+            if variable is self.alternate:
+                self.alternate_button = button
+        self.brightness_slider = tk.Scale(body, label='Яркость выбранного пэда',
+                                          variable=self.brightness, from_=0, to=255, orient='horizontal',
+                                          command=lambda _: self.update_mode_label())
+        self.brightness_slider.pack(fill='x')
+        self.controls.append(self.brightness_slider)
+        self.mode_label = ttk.Label(body)
+        self.mode_label.pack(anchor='w')
+        self.update_modes()
         self.preview = tk.Label(body, text='', height=2)
         self.preview.pack(fill='x', pady=4)
         colours = ttk.Frame(body)
@@ -63,7 +85,7 @@ class App:
         self.controls.append(chooser)
         actions = ttk.Frame(body)
         actions.pack(fill='x', pady=8)
-        self.send_button = ttk.Button(actions, text='Отправить цвет', command=self.begin)
+        self.send_button = ttk.Button(actions, text='Отправить цвет и яркость', command=self.begin)
         self.send_button.pack(side='left', padx=3)
         self.controls.append(self.send_button)
         self.stop_button = ttk.Button(actions, text='Стоп', command=self.cancel.set, state='disabled')
@@ -71,7 +93,7 @@ class App:
         ttk.Button(actions, text='Копировать лог', command=self.copy_log).pack(side='right')
         self.status = tk.StringVar(root, value='Выберите MIDI-вход и выход.')
         ttk.Label(body, textvariable=self.status, wraplength=680).pack(anchor='w')
-        self.log = tk.Text(body, height=9, width=85, state='disabled')
+        self.log = tk.Text(body, height=6, width=85, state='disabled')
         self.log.pack(fill='both', expand=True, pady=6)
         self.preview_colour()
         self.append_log(f'Pad Colour {VERSION}; основа MIDI: рабочий pad-one 2770a7a.')
@@ -130,6 +152,39 @@ class App:
         for box in (self.input, self.output):
             box.configure(state='disabled' if busy else 'readonly')
         self.stop_button.configure(state='normal' if busy else 'disabled')
+        if not busy:
+            self.update_modes()
+
+    def update_modes(self):
+        all_pads = self.all_pads.get()
+        if not all_pads:
+            self.alternate.set(False)
+        self.alternate_button.configure(state='normal' if all_pads else 'disabled')
+        alternate = self.alternate.get()
+        if alternate != self.percent_mode:
+            if alternate:
+                self.saved_brightness = self.brightness.get()
+                self.brightness_slider.configure(to=100)
+                self.brightness.set(self.saved_percent)
+            else:
+                self.saved_percent = self.brightness.get()
+                self.brightness_slider.configure(to=255)
+                self.brightness.set(self.saved_brightness)
+            self.percent_mode = alternate
+        self.brightness_slider.configure(label='Уменьшенная яркость чередования, %' if alternate else 'Яркость, 0–255')
+        for button in self.pad_buttons:
+            button.configure(state='disabled' if all_pads else 'normal')
+        self.update_mode_label()
+
+    def update_mode_label(self):
+        if not hasattr(self, 'mode_label'):
+            return
+        value = self.brightness.get()
+        text = (f'Нечётные: 255; чётные: {value}% = {round(255*value/100)}. Один проход ~13 секунд.'
+                if self.alternate.get() else
+                f'Все 32 пэда: яркость {value}. Один проход ~13 секунд.' if self.all_pads.get()
+                else f'Выбранный пэд: яркость {value}.')
+        self.mode_label.configure(text=text)
 
     def begin(self):
         if self.worker is not None:
@@ -138,14 +193,18 @@ class App:
             self.status.set('Сначала выберите MIDI-вход и MIDI-выход.')
             return
         args = self.input.get(), self.output.get(), self.pad.get(), tuple(v.get() for v in self.rgb)
+        options = dict(brightness=None if self.alternate.get() else self.brightness.get(),
+                       all_pads=self.all_pads.get(), alternate=self.alternate.get(),
+                       alternate_percent=self.brightness.get() if self.alternate.get() else 80)
+        self.expected_acks = 128 if options['all_pads'] else 4
         self.cancel.clear()
         self.set_busy(True)
-        self.status.set(f'Отправка цвета на пэд {args[2]}…')
+        self.status.set('Отправка на все 32 пэда…' if options['all_pads'] else f'Отправка на пэд {args[2]}…')
 
         def work():
             success = False
             try:
-                send_colour(*args, self.cancel, lambda line: self.events.put(('log', line)), backend=self.backend)
+                send_colour(*args, self.cancel, lambda line: self.events.put(('log', line)), backend=self.backend, **options)
                 success = True
             except Exception as error:
                 self.events.put(('log', f'{type(error).__name__}: {error}'))
@@ -165,7 +224,7 @@ class App:
                     self.worker.join()
                     self.worker = None
                     self.set_busy(False)
-                    self.status.set('3 ACK получены — проверьте цвет пэда.' if value else 'Отправка остановлена. Подробности в логе.')
+                    self.status.set(f'{self.expected_acks} ACK получены — проверьте пэды.' if value else 'Отправка остановлена. Подробности в логе.')
         except queue.Empty:
             pass
         if self.closing and self.worker is None:

@@ -7,6 +7,7 @@ on:
       - 'tools/SMK-PAD-COLOUR.md'
       - 'tests/test_smk*.py'
       - 'docs/protocol/smk-32-rgb-addresses.json'
+      - 'docs/protocol/smk-32-brightness.json'
       - 'docs/protocol/smk-pad-one-working-capture.json'
       - '.github/workflows/pad-colour.yml'
   workflow_dispatch:
@@ -52,6 +53,6 @@ jobs:
           Get-FileHash package/MeetStep-SMK-Pad-Colour.exe -Algorithm SHA256
       - uses: actions/upload-artifact@v4
         with:
-          name: MeetStep-SMK-Pad-Colour-0.1.0-Windows-x64
+          name: MeetStep-SMK-Pad-Colour-0.2.0-Windows-x64
           path: package/
           if-no-files-found: error

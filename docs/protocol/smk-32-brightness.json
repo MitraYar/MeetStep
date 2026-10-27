@@ -1,0 +1,168 @@
+{
+  "source": "all white to lights off.pcapng",
+  "sha256": "599d052459ea2b846785f4dcace3ccae315b9de9975d8c7bd740e6fe2009e083",
+  "packets": 2014,
+  "sysex": 190,
+  "changes": [
+    {
+      "address": 286,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 360,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 434,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 508,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 582,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 656,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 730,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 804,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 878,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 952,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1026,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1100,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1174,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1248,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1322,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1396,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1470,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1544,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1618,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1692,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1766,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1840,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1914,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 1988,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2062,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2136,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2210,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2284,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2358,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2432,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2506,
+      "before": 255,
+      "after": 0
+    },
+    {
+      "address": 2580,
+      "before": 255,
+      "after": 0
+    }
+  ]
+}
