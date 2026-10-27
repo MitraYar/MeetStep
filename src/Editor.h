@@ -7,6 +7,7 @@ class Grid : public juce::Component {
 public:
     explicit Grid(Pattern& p) : model(p), stroke(p) {}
     int baseNote=36;
+    std::atomic<int> playingStep {-1};
     juce::Rectangle<int> cells() const { return getLocalBounds().withTrimmedLeft(92).withTrimmedTop(26); }
     void paint(juce::Graphics& g) override {
         const auto area=cells();
@@ -25,7 +26,9 @@ public:
             for(int s=0;s<16;++s) {
                 g.setColour(model.enabled(note,s)?juce::Colour(0xff47d7b0):
                     (s%4==0?juce::Colour(0xff354152):juce::Colour(0xff272f3d)));
-                g.fillRoundedRectangle(juce::Rectangle<float>(area.getX()+s*w+2,area.getY()+row*h+2,w-4,h-4),3);
+                auto cell=juce::Rectangle<float>(area.getX()+s*w+2,area.getY()+row*h+2,w-4,h-4);
+                g.fillRoundedRectangle(cell,3);
+                if(s==playingStep.load()) {g.setColour(juce::Colour(0xffffc66d));g.drawRoundedRectangle(cell,3,1.5f);}
             }
         }
     }

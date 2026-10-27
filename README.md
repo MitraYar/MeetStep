@@ -59,3 +59,11 @@ and download **MeetStep-0.1.0-Windows-x64** from Artifacts. Extract the
 artifact archive and the enclosed ZIP; follow `INSTALL-WINDOWS.txt`.
 The full `MeetStep.vst3` directory must stay together. The screenshot is
 also uploaded separately as **MeetStep-editor-screenshot**.
+
+## Standalone 0.2.0
+
+The Windows package now also includes `MeetStep Standalone.exe`.
+It owns MIDI devices directly, supports multiple inputs and one output, and
+sends sequence notes plus MIDI Clock/Start/Stop/Continue as the clock master.
+See `packaging/INSTALL-WINDOWS.txt` for routing, shortcuts and limitations.
+The VST3 remains the previous editor milestone; standalone playback is separate.
