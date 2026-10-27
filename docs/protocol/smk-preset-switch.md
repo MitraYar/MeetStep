@@ -62,3 +62,9 @@ messages with exact decode/encode round trips; the status request matches the
 captured bytes exactly. Real-device success for nonzero preset writes and cold
 connection setup is still to be confirmed by the user. Slot labels in the UI
 are index+1, but logs retain the actual zero-based index.
+
+Windows input buffers are explicitly set to 4096 bytes (four buffers) through
+python-rtmidi before opening the input. The captured 1009-byte data replies
+expand beyond 1024 bytes as SysEx, so relying on small default WinMM input
+buffers can truncate these responses. Timing/active-sense input is ignored;
+SysEx reception is enabled. This setting is unrelated to hardware write rates.

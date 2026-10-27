@@ -1,4 +1,7 @@
 """SMK bank-1 colour/brightness probe with acknowledged, bounded writes."""
+import contextlib
+import sys
+import rtmidi
 import queue
 import threading
 import time
@@ -87,6 +90,31 @@ def receive(message):
             pass
 
 
+@contextlib.contextmanager
+def open_probe_input(name):
+    device = rtmidi.MidiIn()
+    try:
+        # Captured 1009-byte reads produce SysEx longer than the default
+        # Windows MIDI input buffer. Configure buffers BEFORE opening the port.
+        if sys.platform == 'win32':
+            device.set_buffer_size(4096, 4)
+        names = device.get_ports()
+        if name not in names:
+            raise RuntimeError('Input disappeared; refresh ports.')
+        device.ignore_types(sysex=False, timing=True, active_sense=True)
+        def callback(event, _):
+            try:
+                receive(mido.Message.from_bytes(event[0]))
+            except (ValueError, TypeError):
+                pass
+        device.set_callback(callback)
+        device.open_port(names.index(name))
+        yield device
+    finally:
+        device.cancel_callback()
+        device.close_port()
+
+
 def exchange(output, wire, matcher, description):
     if cancel.is_set():
         raise RuntimeError('Stopped by user.')
@@ -132,7 +160,7 @@ def read_profile_bytes(output, active, offset, length):
 def run_probe(input_name, output_name, pad, rgb, level, read_only=False):
     try:
         ui.put(f'LED probe {VERSION} | Input: {input_name} | Output: {output_name}')
-        with mido.open_input(input_name, callback=receive), mido.open_output(output_name) as output:
+        with open_probe_input(input_name), mido.open_output(output_name) as output:
             status = read(output, 4, 0, 100)
             active = status[0]
             if not 0 <= active <= 7:
