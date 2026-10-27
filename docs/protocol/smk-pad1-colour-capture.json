@@ -1,50 +1,8 @@
 [
-  {
-    "frame": 12153,
-    "time": 1793126018.799307,
-    "ep": 4,
-    "cable": 0,
-    "wire": "f0 00 32 09 49 00 00 40 02 1b 02 00 00 10 00 00 00 4c 22 02 f7",
-    "logical": "00 59 22 09 00 00 05 1b 01 00 00 01 00 00 4c 91"
-  },
-  {
-    "frame": 12155,
-    "time": 1793126018.799801,
-    "ep": 132,
-    "cable": 0,
-    "wire": "f0 00 32 01 08 00 00 00 00 7f 01 f7",
-    "logical": "00 59 00 01 00 00 00 ff"
-  },
-  {
-    "frame": 12157,
-    "time": 1793126018.800189,
-    "ep": 4,
-    "cable": 0,
-    "wire": "f0 00 32 09 49 00 00 40 02 1c 02 00 00 10 00 00 00 64 71 03 f7",
-    "logical": "00 59 22 09 00 00 05 1c 01 00 00 01 00 00 e4 f8"
-  },
-  {
-    "frame": 12159,
-    "time": 1793126018.801311,
-    "ep": 132,
-    "cable": 0,
-    "wire": "f0 00 32 01 08 00 00 00 00 7f 01 f7",
-    "logical": "00 59 00 01 00 00 00 ff"
-  },
-  {
-    "frame": 12161,
-    "time": 1793126018.801689,
-    "ep": 4,
-    "cable": 0,
-    "wire": "f0 00 32 09 49 00 00 40 02 1d 02 00 00 10 00 00 00 37 48 02 f7",
-    "logical": "00 59 22 09 00 00 05 1d 01 00 00 01 00 00 37 a4"
-  },
-  {
-    "frame": 12163,
-    "time": 1793126018.801991,
-    "ep": 132,
-    "cable": 0,
-    "wire": "f0 00 32 01 08 00 00 00 00 7f 01 f7",
-    "logical": "00 59 00 01 00 00 00 ff"
-  }
+  {"frame": 12153, "command": "write RGB byte", "address": "0x11B", "value": "0x4C"},
+  {"frame": 12155, "command": "ack", "value": "ok"},
+  {"frame": 12157, "command": "write RGB byte", "address": "0x11C", "value": "0xE4"},
+  {"frame": 12159, "command": "ack", "value": "ok"},
+  {"frame": 12161, "command": "write RGB byte", "address": "0x11D", "value": "0x37"},
+  {"frame": 12163, "command": "ack", "value": "ok"}
 ]
