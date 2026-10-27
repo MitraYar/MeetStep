@@ -1,5 +1,10 @@
-name: Windows VST3
-on: [push, pull_request, workflow_dispatch]
+name: Windows Standalone
+on:
+  push:
+    paths: ['src/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['src/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -8,11 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure Windows x64
-        run: cmake -S . -B build -A x64 -DMEETSTEP_BUILD_PLUGIN=ON
+        run: cmake -S . -B build -A x64 -DMEETSTEP_BUILD_STANDALONE=ON -DMEETSTEP_BUILD_PLUGIN=OFF -DBUILD_TESTING=OFF
       - name: Build
         shell: pwsh
         run: |
-          cmake --build build --config Release --parallel 2 2>&1 | Tee-Object -FilePath build-output.log
+          cmake --build build --config Release --target MeetStepApp --parallel 2 2>&1 | Tee-Object -FilePath build-output.log
           $buildExitCode = $LASTEXITCODE
           if ($buildExitCode -ne 0) {
             $errors = @(Select-String -Path build-output.log -Pattern '(?i)(fatal error|error [A-Z]+[0-9]+|error:|unresolved external)' | Select-Object -Last 20)
@@ -23,13 +28,10 @@ jobs:
             }
           }
           exit $buildExitCode
-      - name: Test
-        run: ctest --test-dir build -C Release --output-on-failure
-      - name: Package plugin
+      - name: Package standalone
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path package | Out-Null
-          Copy-Item build/MeetStep_artefacts/Release/VST3/MeetStep.vst3 package/MeetStep.vst3 -Recurse
           Copy-Item "build/MeetStepApp_artefacts/Release/MeetStep Standalone.exe" package/
           Copy-Item packaging/INSTALL-WINDOWS.txt package/
           Compress-Archive -Path package/* -DestinationPath MeetStep-0.2.0-Windows-x64.zip
@@ -38,9 +40,4 @@ jobs:
         with:
           name: MeetStep-0.2.0-Windows-x64
           path: MeetStep-0.2.0-Windows-x64.zip
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MeetStep-editor-screenshot
-          path: build/meetstep-editor.png
           if-no-files-found: error

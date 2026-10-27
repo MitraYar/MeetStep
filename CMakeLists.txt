@@ -11,15 +11,21 @@ if(BUILD_TESTING)
 endif()
 
 option(MEETSTEP_BUILD_PLUGIN "Build JUCE VST3 editor prototype" OFF)
-if(MEETSTEP_BUILD_PLUGIN)
+option(MEETSTEP_BUILD_STANDALONE "Build MeetStep standalone" ON)
+if(MEETSTEP_BUILD_PLUGIN OR MEETSTEP_BUILD_STANDALONE)
   include(FetchContent)
   FetchContent_Declare(JUCE GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
     GIT_TAG 51a8a6d7aeae7326956d747737ccf1575e61e209)
   FetchContent_MakeAvailable(JUCE)
+endif()
+if(MEETSTEP_BUILD_STANDALONE)
   juce_add_gui_app(MeetStepApp PRODUCT_NAME "MeetStep Standalone")
   target_sources(MeetStepApp PRIVATE src/Standalone.cpp)
   target_link_libraries(MeetStepApp PRIVATE meetstep_core juce::juce_audio_utils)
   target_compile_definitions(MeetStepApp PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+endif()
+# Frozen VST3 target: explicit opt-in only, excluded from CI.
+if(MEETSTEP_BUILD_PLUGIN)
   juce_add_plugin(MeetStep COMPANY_NAME MitraYar PLUGIN_MANUFACTURER_CODE Mtry
     PLUGIN_CODE Mtsp FORMATS VST3 PRODUCT_NAME MeetStep
     IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT TRUE

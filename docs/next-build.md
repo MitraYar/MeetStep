@@ -45,3 +45,22 @@ volatile control or write endurance is understood.
 First feedback goal: occupied versus empty steps, refreshed on drum/pattern
 changes and edits. Playhead animation is a separate follow-up after protocol
 support and update cost are established. Hardware verification is required.
+
+## Scope update: standalone only
+
+User froze VST3. CI now builds and packages only MeetStepApp; plugin source is
+retained for a possible later explicit request. Docs and LED utility changes
+no longer trigger the expensive JUCE application build.
+
+LED probe UI now separates pad selection, ten colours, and five brightness
+levels. Apply writes only the selected pad, up to four acknowledged bytes.
+Pads 1–5 are captured; bank-1 pads 6–16 use the matching preset layout with
+inferred command applicability. Bank-2 pads 17–32 are shown disabled pending
+address mapping. Auto-select the confirmed SMK-37 Pro Midi ports by name, not
+transient global numeric indices. Colour/brightness control changes do not
+transmit until Apply. GUI controls may be changed while sending, but the active
+operation uses its original captured selection.
+
+For bank 2: capture colour plus brightness changes on physical pad 1 and pad 16
+with bank 2 selected, and preferably export the resulting .smk37 preset. This
+can locate the bank and validate its stride without 16 separate captures.
