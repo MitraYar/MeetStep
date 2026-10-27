@@ -1,4 +1,4 @@
-MeetStep 0.1.0 — pattern editor prototype (Windows x64)
+MeetStep 0.2.0 — Standalone + VST3 editor (Windows x64)
 
 1. Close Ableton Live.
 2. Extract this archive. Keep the complete MeetStep.vst3 folder intact.

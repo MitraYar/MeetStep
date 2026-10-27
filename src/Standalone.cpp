@@ -37,7 +37,7 @@ private:
  std::atomic<bool> preview{false};std::atomic<double>bpm{120};bool running=false;int tick=0;double next=0;std::bitset<128> sounding,live;
  void send(const juce::MidiMessage& m){if(output)output->sendMessageNow(m);}
  void silence(){for(int n=0;n<128;++n)if(sounding[n]||live[n])send(juce::MidiMessage::noteOff(1,n));sounding.reset();live.reset();}
- void transport(bool play,bool cont){const juce::ScopedLock guard(lock);silence();running=play;if(!play)panel.getGrid().playingStep=-1;if(!cont)tick=0;next=juce::Time::getMillisecondCounterHiRes();send(play?(cont?juce::MidiMessage::midiContinue():juce::MidiMessage::midiStart()):juce::MidiMessage::midiStop());}
+ void transport(bool play,bool cont){const juce::ScopedLock guard(lock);silence();running=play;if(!play)panel.getGrid().playingStep=-1;if(play&&!cont)tick=0;next=juce::Time::getMillisecondCounterHiRes();send(play?(cont?juce::MidiMessage::midiContinue():juce::MidiMessage::midiStart()):juce::MidiMessage::midiStop());}
  void handleIncomingMidiMessage(juce::MidiInput*,const juce::MidiMessage& m) override {
   const juce::ScopedLock guard(lock);
   if(m.isNoteOn()){
