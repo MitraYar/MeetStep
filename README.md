@@ -33,3 +33,10 @@ is required. GitHub Actions workflow `Windows Standalone` publishes the app;
 `SMK LED probe Windows` publishes the separate diagnostic utility.
 See [installation/routing](packaging/INSTALL-WINDOWS.txt) and
 [controller map](docs/controller.md).
+
+## LED diagnostic status
+
+Only the original pad-one diagnostic (`2770a7a`) is accepted as the MIDI/SysEx
+baseline. Later palette/RGB utilities are withdrawn; do not use their artifacts.
+See [the regression report](docs/protocol/smk-led-regression.md). The manual
+`SMK pad-one baseline Windows` workflow packages only the restored baseline.

@@ -1,5 +1,9 @@
 # SMK preset switching: captured evidence
 
+**Utility status superseded 2026-10-28:** the 0.3.0 implementation below is
+rejected. The capture findings remain evidence, but its transport must not be
+reused. See [regression analysis](smk-led-regression.md).
+
 Source: `pad 1 to 16 change presets.pcapng`, 123,832 bytes, 1,024 captured
 USBPcap packets. Device address 16, OUT 0x04, IN 0x84, MIDI cable 0.
 All 102 reconstructed M-VAVE SysEx messages have matching declared lengths
@@ -63,8 +67,8 @@ captured bytes exactly. Real-device success for nonzero preset writes and cold
 connection setup is still to be confirmed by the user. Slot labels in the UI
 are index+1, but logs retain the actual zero-based index.
 
-Windows input buffers are explicitly set to 4096 bytes (four buffers) through
-python-rtmidi before opening the input. The captured 1009-byte data replies
-expand beyond 1024 bytes as SysEx, so relying on small default WinMM input
-buffers can truncate these responses. Timing/active-sense input is ignored;
-SysEx reception is enabled. This setting is unrelated to hardware write rates.
+The later attempt to set Windows input buffers to 4096 bytes was invalid:
+python-rtmidi 1.5.8 does not expose `set_buffer_size`. Calling it raises
+AttributeError before MIDI ports open. Large-response receive capacity was
+not successfully configured or validated. See the regression analysis;
+this old implementation is not an approved transport baseline.

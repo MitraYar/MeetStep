@@ -1,6 +1,14 @@
 # MeetStep handoff / current project status
 
 This file is the entry point for resuming work in a new Codex task.
+
+**2026-10-28: LED transport rollback.** Only commit `2770a7a` (Build bounded
+Windows SMK pad-one LED diagnostic) is accepted as the MIDI/SysEx baseline.
+All later LED utility implementations are rejected by user instruction; do not
+reuse their transport. `tools/smk_led_probe.py` is restored verbatim to that
+baseline. RGB tester/launcher removed; only the baseline has manual Actions
+packaging. See [regression evidence](protocol/smk-led-regression.md).
+
 Use the existing checkout; do not create a worktree for routine tasks.
 
 ## Scope and product
@@ -58,12 +66,14 @@ Findings:
 - protocol/*.json: extracted evidence, not commands to replay blindly.
 - smk-diagnostics.md: passive input monitoring limitations.
 
-Probe tools are separate from MeetStep, not integrated feedback. The palette
-probe has 16 active pads (6–16 inferred from preset layout), 10 colours, five
-brightness levels, ACK waits, Stop, no retries and no device Save. Bank 2 is
-disabled; its address mapping is still unknown. Changing preset is NOT changing
-pad bank. Next task: active-preset-aware, bounded diagnostic; establish session
-requirements and actual device behavior before real-time LED animation.
+Probe tools are separate from MeetStep, not integrated feedback. The accepted
+pad-one baseline only writes captured preset-0 offsets 0x11B–0x11D and waits
+for ACKs. It does not detect the active preset or support arbitrary pads.
+The user confirmed two banks of 16 and Apply without Save. The all-black to
+all-white capture identifies 32 RGB triples; physical ordering of records
+17–32 is still unconfirmed. The requested 32-pad RGB sliders and random
+colour/GUI selection on pad press remain pending a replacement based on the
+accepted transport. No hardware-ready replacement is claimed.
 
 ## Evidence availability
 
@@ -73,10 +83,12 @@ and /tmp files are not durable. No claim that all hardware details or firmware
 behavior are resolved. Some earlier documents describe historical milestones;
 this file and the latest capture-specific findings take precedence.
 
-### Latest utility update
+### Latest utility status
 
-LED probe 0.3.0 adds active MidiSuite preset detection, validated pad record
-reads, ACK-gated writes with per-preset addressing, readback, and Copy log.
-Codecs/read parsing were verified offline against the last 102-message capture.
-Hardware confirmation is pending. If reading fails, it sends no colour writes.
-Source updates trigger only the lightweight LED probe build, not JUCE/VST3.
+The new 788-byte user capture proves three 21-byte SysEx writes and three
+12-byte ACKs for the original pad-one baseline. The last LED and RGB utilities
+fail before either MIDI port opens on Windows: `python-rtmidi==1.5.8` does not
+expose the `set_buffer_size` method called by those implementations. The
+previous Linux GUI tests did not exercise that Windows path. The initial
+palette failure remains unexplained; it did not contain this call. See the
+regression report for confirmed facts versus hypotheses and regression tests.
