@@ -1,0 +1,18 @@
+MeetStep 0.1.0 — pattern editor prototype (Windows x64)
+
+1. Close Ableton Live.
+2. Extract this archive. Keep the complete MeetStep.vst3 folder intact.
+3. Copy MeetStep.vst3 to C:\Program Files\Common Files\VST3\
+   (Windows may ask for administrator permission.)
+4. Open Live. In Preferences > Plug-Ins enable VST3 system folders,
+   then rescan. Insert MeetStep on a MIDI track.
+5. To edit using SMK 37 Pro, select its MIDI input with All Channels,
+   and arm the track or set Monitor to In.
+
+This build tests the editor only: six patterns, 16 steps, mouse editing,
+SMK pad mapping and saving with the Live project. It does not yet generate
+MIDI or sound. Do not expect Drum Rack playback in this build.
+
+Notes outside MIDI channel 10 select a drum. Bank-1 pads on channel 10
+edit steps. Left mouse button draws; right button erases; drag edits a row.
+Clear pattern / Clear all erase immediately. There is no undo yet.
