@@ -72,3 +72,11 @@ files are not in Git and may need reattachment in a new task. Attachment paths
 and /tmp files are not durable. No claim that all hardware details or firmware
 behavior are resolved. Some earlier documents describe historical milestones;
 this file and the latest capture-specific findings take precedence.
+
+### Latest utility update
+
+LED probe 0.3.0 adds active MidiSuite preset detection, validated pad record
+reads, ACK-gated writes with per-preset addressing, readback, and Copy log.
+Codecs/read parsing were verified offline against the last 102-message capture.
+Hardware confirmation is pending. If reading fails, it sends no colour writes.
+Source updates trigger only the lightweight LED probe build, not JUCE/VST3.

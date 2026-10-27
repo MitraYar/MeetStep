@@ -1,7 +1,7 @@
 name: SMK LED probe Windows
 on:
   push:
-    paths: ['tools/smk_led_probe.py', '.github/workflows/led-probe.yml']
+    paths: ['tools/smk_led_probe.py', 'tools/smk_protocol.py', '.github/workflows/led-probe.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +19,6 @@ jobs:
         run: python -m PyInstaller --onefile --windowed --name MeetStep-SMK-LED-Probe --hidden-import mido.backends.rtmidi tools/smk_led_probe.py
       - uses: actions/upload-artifact@v4
         with:
-          name: MeetStep-SMK-LED-Probe-Windows-x64
+          name: MeetStep-SMK-LED-Probe-0.3.0-Windows-x64
           path: dist/MeetStep-SMK-LED-Probe.exe
           if-no-files-found: error
