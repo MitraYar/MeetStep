@@ -53,3 +53,23 @@ bytes. Determine whether the colour updates instantly or requires Apply/Send,
 and whether it persists after a power cycle. Confirm the actual transport and
 port before implementing a one-pad diagnostic write. Do not replay the preset
 or an SMC-PAD session to the keyboard based on this offline comparison alone.
+
+## Confirmed user observations: Apply versus Save
+
+The user reports:
+- Changing a colour in MidiSuite does not immediately change the device LED.
+- Apply/Send (actual button wording differs) applies the colour to the device.
+- The applied colour does not survive USB power cycling unless Save to device
+  is used separately.
+
+This establishes a nonpersistent user-visible apply path distinct from saving.
+It supports investigating temporary LED control. It does not establish the
+underlying memory commands, whether Apply sends one field or the whole preset,
+whether updates can be fast enough for a playhead, or how many writes occur.
+
+Next capture should isolate: connect/read session; one pad colour Apply;
+a second colour Apply; end capture. Do not invoke Save to device in this capture.
+Comparing the two Apply exchanges can distinguish a short colour update from
+a complete configuration transfer. Preserve original settings in an exported
+preset. Capture only the SMK USB device traffic where possible; a generic MIDI
+input observer does not automatically see MidiSuite's outbound transfers.
