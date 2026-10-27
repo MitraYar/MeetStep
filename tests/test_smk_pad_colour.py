@@ -1,0 +1,123 @@
+"""Exercise the actual Mido/RtMidi adapter using API-constrained fake devices."""
+import importlib
+import json
+from pathlib import Path
+import sys
+import threading
+import unittest
+from unittest.mock import Mock, patch
+
+import mido
+import rtmidi
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'tools'))
+from smk_pad_colour import ACK, colour_packets, send_colour
+from smk_protocol import decode  # Independent capture-validated decoder, no device I/O.
+
+CAPTURE = json.loads((ROOT / 'docs/protocol/smk-pad-one-working-capture.json').read_text())
+ADDRESSES = json.loads((ROOT / 'docs/protocol/smk-32-rgb-addresses.json').read_text())
+
+
+class ColourTests(unittest.TestCase):
+    def setUp(self):
+        self.adapter = importlib.import_module('mido.backends.rtmidi')
+        # These specs deliberately prohibit invented methods such as set_buffer_size.
+        self.input = Mock(spec_set=rtmidi.MidiIn)
+        self.output = Mock(spec_set=rtmidi.MidiOut)
+        for device, name in ((self.input, 'SMK IN'), (self.output, 'SMK OUT')):
+            device.get_ports.return_value = [name]
+            device.get_current_api.return_value = rtmidi.API_WINDOWS_MM
+        self.callback = None
+        self.input.set_callback.side_effect = lambda cb: setattr(self, 'callback', cb)
+        self.reply = ACK
+        self.cancel = threading.Event()
+        self.logs = []
+        self.sent = []
+
+        def send(wire):
+            self.sent.append(bytes(wire))
+            if self.reply is not None:
+                self.callback((list(self.reply), 0.001), None)
+        self.output.send_message.side_effect = send
+        self.patches = [patch.object(self.adapter.rtmidi, 'MidiIn', return_value=self.input),
+                        patch.object(self.adapter.rtmidi, 'MidiOut', return_value=self.output)]
+        for p in self.patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+    def send(self, pad=1, rgb=(0x4C, 0xE4, 0x37)):
+        # Run the real backend/port opening path, not a replacement Session.
+        send_colour('SMK IN', 'SMK OUT', pad, rgb, self.cancel, self.logs.append,
+                    timeout=.03, spacing=0)
+
+    def test_real_mido_adapter_opens_ports_and_matches_working_capture(self):
+        self.send()
+        self.assertEqual(self.sent, [bytes.fromhex(x['wire']) for x in CAPTURE['messages'][::2]])
+        self.input.open_port.assert_called_once_with(0)
+        self.output.open_port.assert_called_once_with(0)
+        self.input.ignore_types.assert_called_once_with(False, False, True)
+        self.input.close_port.assert_called_once()
+        self.output.close_port.assert_called_once()
+        self.input.delete.assert_called_once()
+        self.output.delete.assert_called_once()
+        self.assertIn('Все 3 ACK получены', self.logs[-1])
+
+    def test_all_32_addresses_match_black_white_capture_only_rgb_written(self):
+        for record in ADDRESSES:
+            for colour in ((0, 0, 0), (255, 255, 255), (1, 127, 128)):
+                messages = colour_packets(record['record'], colour)
+                self.assertEqual(len(messages), 3)
+                for message, address, value in zip(messages, record['rgb_offsets'], colour):
+                    command, data = decode(bytes(message.bytes()))
+                    self.assertEqual(command, 0x22)
+                    self.assertEqual(data, b'\x05' + address.to_bytes(4, 'little') + b'\x01\0\0' + bytes([value]))
+
+    def test_last_pad_uses_same_send_path(self):
+        self.send(32, (255, 0, 127))
+        self.assertEqual([int.from_bytes(decode(x)[1][1:5], 'little') for x in self.sent], [0xA11, 0xA12, 0xA13])
+
+    def test_no_ack_sends_only_one_byte_and_closes_ports(self):
+        self.reply = None
+        with self.assertRaises(TimeoutError): self.send()
+        self.assertEqual(len(self.sent), 1)
+        self.input.close_port.assert_called_once()
+        self.output.close_port.assert_called_once()
+
+    def test_wrong_sysex_is_not_accepted_as_ack(self):
+        self.reply = bytes.fromhex(CAPTURE['messages'][0]['wire'])
+        with self.assertRaises(TimeoutError): self.send()
+        self.assertEqual(len(self.sent), 1)
+
+    def test_cancel_after_first_ack_stops_remaining_writes(self):
+        def log(line):
+            if line.startswith('RX ACK:'): self.cancel.set()
+        send = lambda: send_colour('SMK IN', 'SMK OUT', 1, (1,2,3), self.cancel, log, spacing=.01)
+        with self.assertRaises(InterruptedError): send()
+        self.assertEqual(len(self.sent), 1)
+        self.input.close_port.assert_called_once()
+
+    def test_output_open_error_closes_input_and_sends_nothing(self):
+        self.output.open_port.side_effect = RuntimeError('port busy')
+        with self.assertRaises(OSError): self.send()
+        self.input.close_port.assert_called_once()
+        self.assertFalse(self.sent)
+
+    def test_input_open_error_never_opens_output(self):
+        self.input.open_port.side_effect = RuntimeError('port busy')
+        with self.assertRaises(OSError): self.send()
+        self.output.open_port.assert_not_called()
+        self.assertFalse(self.sent)
+
+    def test_invalid_pad_or_rgb_never_opens_a_port(self):
+        for pad, rgb in [(0,(1,2,3)),(33,(1,2,3)),(1,(256,0,0)),(1,(1,2)),(1,(-1,2,3))]:
+            with self.assertRaises(ValueError): self.send(pad,rgb)
+        self.input.open_port.assert_not_called()
+
+    def test_pre_cancelled_operation_does_not_open_ports(self):
+        self.cancel.set()
+        with self.assertRaises(InterruptedError): self.send()
+        self.input.open_port.assert_not_called()
+
+
+if __name__ == '__main__': unittest.main()

@@ -40,3 +40,7 @@ Only the original pad-one diagnostic (`2770a7a`) is accepted as the MIDI/SysEx
 baseline. Later palette/RGB utilities are withdrawn; do not use their artifacts.
 See [the regression report](docs/protocol/smk-led-regression.md). The manual
 `SMK pad-one baseline Windows` workflow packages only the restored baseline.
+
+A new simple manual RGB test candidate is described in
+[SMK Pad Colour](tools/SMK-PAD-COLOUR.md). Its separate Windows workflow is
+`SMK Simple Pad Colour Windows`; hardware validation is pending.

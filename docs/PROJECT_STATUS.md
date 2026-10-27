@@ -4,9 +4,9 @@ This file is the entry point for resuming work in a new Codex task.
 
 **2026-10-28: LED transport rollback.** Only commit `2770a7a` (Build bounded
 Windows SMK pad-one LED diagnostic) is accepted as the MIDI/SysEx baseline.
-All later LED utility implementations are rejected by user instruction; do not
-reuse their transport. `tools/smk_led_probe.py` is restored verbatim to that
-baseline. RGB tester/launcher removed; only the baseline has manual Actions
+The later LED implementations at 5b53c6e, d373abe, ec35bf8 and 0feb67f
+are rejected by user instruction; do not reuse their transport. `tools/smk_led_probe.py` is restored verbatim to that
+baseline. Rejected RGB tester/launcher removed; the baseline has manual Actions
 packaging. See [regression evidence](protocol/smk-led-regression.md).
 
 Use the existing checkout; do not create a worktree for routine tasks.
@@ -92,3 +92,23 @@ expose the `set_buffer_size` method called by those implementations. The
 previous Linux GUI tests did not exercise that Windows path. The initial
 palette failure remains unexplained; it did not contain this call. See the
 regression report for confirmed facts versus hypotheses and regression tests.
+
+### Simple pad-colour replacement, 0.1.0
+
+The user requested a new simple manual colour utility after the rollback.
+`tools/smk_pad_colour.py` and `tools/smk_pad_colour_gui.py` implement it from
+the accepted pad-one packet encoder and Mido input/output/callback path.
+32 selectable RGB records; explicit Send button; three short writes with ACKs
+and 100 ms spacing. No raw RtMidi API, buffer override, preset reads, Save,
+brightness writes or automatic slider traffic. Select preset 1 (index 0) in
+MidiSuite before use, then close MidiSuite. Bank-2 physical ordering remains
+unconfirmed. Random-on-note behaviour is deferred from this simplified test.
+
+The original pad-one source is unchanged. The previously rejected builds stay
+withdrawn. The new implementation is a test candidate, not yet hardware-verified.
+14 local tests pass, including the real Mido adapter with API-constrained RtMidi
+test doubles, captured bytes, ACK/timeout/cancel, cleanup and GUI Send flow.
+A separate `SMK Simple Pad Colour Windows` workflow builds the new EXE and
+requires a packaged GUI/backend smoke test before artifact upload. Local Linux
+checks do not establish successful Windows Actions execution or hardware results.
+See `tools/SMK-PAD-COLOUR.md` for user instructions.

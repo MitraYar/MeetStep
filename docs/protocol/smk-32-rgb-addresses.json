@@ -1,0 +1,514 @@
+[
+  {
+    "record": 1,
+    "record_offset": 279,
+    "rgb_offset": 283,
+    "rgb_offsets": [
+      283,
+      284,
+      285
+    ],
+    "channel_field": 9,
+    "note_field": 40,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 2,
+    "record_offset": 353,
+    "rgb_offset": 357,
+    "rgb_offsets": [
+      357,
+      358,
+      359
+    ],
+    "channel_field": 9,
+    "note_field": 41,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 3,
+    "record_offset": 427,
+    "rgb_offset": 431,
+    "rgb_offsets": [
+      431,
+      432,
+      433
+    ],
+    "channel_field": 9,
+    "note_field": 42,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 4,
+    "record_offset": 501,
+    "rgb_offset": 505,
+    "rgb_offsets": [
+      505,
+      506,
+      507
+    ],
+    "channel_field": 9,
+    "note_field": 43,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 5,
+    "record_offset": 575,
+    "rgb_offset": 579,
+    "rgb_offsets": [
+      579,
+      580,
+      581
+    ],
+    "channel_field": 9,
+    "note_field": 48,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 6,
+    "record_offset": 649,
+    "rgb_offset": 653,
+    "rgb_offsets": [
+      653,
+      654,
+      655
+    ],
+    "channel_field": 9,
+    "note_field": 49,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 7,
+    "record_offset": 723,
+    "rgb_offset": 727,
+    "rgb_offsets": [
+      727,
+      728,
+      729
+    ],
+    "channel_field": 9,
+    "note_field": 50,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 8,
+    "record_offset": 797,
+    "rgb_offset": 801,
+    "rgb_offsets": [
+      801,
+      802,
+      803
+    ],
+    "channel_field": 9,
+    "note_field": 51,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 9,
+    "record_offset": 871,
+    "rgb_offset": 875,
+    "rgb_offsets": [
+      875,
+      876,
+      877
+    ],
+    "channel_field": 9,
+    "note_field": 36,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 10,
+    "record_offset": 945,
+    "rgb_offset": 949,
+    "rgb_offsets": [
+      949,
+      950,
+      951
+    ],
+    "channel_field": 9,
+    "note_field": 37,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 11,
+    "record_offset": 1019,
+    "rgb_offset": 1023,
+    "rgb_offsets": [
+      1023,
+      1024,
+      1025
+    ],
+    "channel_field": 9,
+    "note_field": 38,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 12,
+    "record_offset": 1093,
+    "rgb_offset": 1097,
+    "rgb_offsets": [
+      1097,
+      1098,
+      1099
+    ],
+    "channel_field": 9,
+    "note_field": 39,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 13,
+    "record_offset": 1167,
+    "rgb_offset": 1171,
+    "rgb_offsets": [
+      1171,
+      1172,
+      1173
+    ],
+    "channel_field": 9,
+    "note_field": 44,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 14,
+    "record_offset": 1241,
+    "rgb_offset": 1245,
+    "rgb_offsets": [
+      1245,
+      1246,
+      1247
+    ],
+    "channel_field": 9,
+    "note_field": 45,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 15,
+    "record_offset": 1315,
+    "rgb_offset": 1319,
+    "rgb_offsets": [
+      1319,
+      1320,
+      1321
+    ],
+    "channel_field": 9,
+    "note_field": 46,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 16,
+    "record_offset": 1389,
+    "rgb_offset": 1393,
+    "rgb_offsets": [
+      1393,
+      1394,
+      1395
+    ],
+    "channel_field": 9,
+    "note_field": 47,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "bank 1, physical order"
+  },
+  {
+    "record": 17,
+    "record_offset": 1463,
+    "rgb_offset": 1467,
+    "rgb_offsets": [
+      1467,
+      1468,
+      1469
+    ],
+    "channel_field": 9,
+    "note_field": 64,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 0,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 18,
+    "record_offset": 1537,
+    "rgb_offset": 1541,
+    "rgb_offsets": [
+      1541,
+      1542,
+      1543
+    ],
+    "channel_field": 9,
+    "note_field": 65,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 1,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 19,
+    "record_offset": 1611,
+    "rgb_offset": 1615,
+    "rgb_offsets": [
+      1615,
+      1616,
+      1617
+    ],
+    "channel_field": 9,
+    "note_field": 66,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 2,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 20,
+    "record_offset": 1685,
+    "rgb_offset": 1689,
+    "rgb_offsets": [
+      1689,
+      1690,
+      1691
+    ],
+    "channel_field": 9,
+    "note_field": 67,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 3,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 21,
+    "record_offset": 1759,
+    "rgb_offset": 1763,
+    "rgb_offsets": [
+      1763,
+      1764,
+      1765
+    ],
+    "channel_field": 9,
+    "note_field": 68,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 4,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 22,
+    "record_offset": 1833,
+    "rgb_offset": 1837,
+    "rgb_offsets": [
+      1837,
+      1838,
+      1839
+    ],
+    "channel_field": 9,
+    "note_field": 69,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 5,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 23,
+    "record_offset": 1907,
+    "rgb_offset": 1911,
+    "rgb_offsets": [
+      1911,
+      1912,
+      1913
+    ],
+    "channel_field": 9,
+    "note_field": 70,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 6,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 24,
+    "record_offset": 1981,
+    "rgb_offset": 1985,
+    "rgb_offsets": [
+      1985,
+      1986,
+      1987
+    ],
+    "channel_field": 9,
+    "note_field": 71,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 7,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 25,
+    "record_offset": 2055,
+    "rgb_offset": 2059,
+    "rgb_offsets": [
+      2059,
+      2060,
+      2061
+    ],
+    "channel_field": 9,
+    "note_field": 94,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 94,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 26,
+    "record_offset": 2129,
+    "rgb_offset": 2133,
+    "rgb_offsets": [
+      2133,
+      2134,
+      2135
+    ],
+    "channel_field": 9,
+    "note_field": 93,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 93,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 27,
+    "record_offset": 2203,
+    "rgb_offset": 2207,
+    "rgb_offsets": [
+      2207,
+      2208,
+      2209
+    ],
+    "channel_field": 9,
+    "note_field": 95,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 95,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 28,
+    "record_offset": 2277,
+    "rgb_offset": 2281,
+    "rgb_offsets": [
+      2281,
+      2282,
+      2283
+    ],
+    "channel_field": 9,
+    "note_field": 91,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 91,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 29,
+    "record_offset": 2351,
+    "rgb_offset": 2355,
+    "rgb_offsets": [
+      2355,
+      2356,
+      2357
+    ],
+    "channel_field": 9,
+    "note_field": 92,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 92,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 30,
+    "record_offset": 2425,
+    "rgb_offset": 2429,
+    "rgb_offsets": [
+      2429,
+      2430,
+      2431
+    ],
+    "channel_field": 9,
+    "note_field": 46,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 31,
+    "record_offset": 2499,
+    "rgb_offset": 2503,
+    "rgb_offsets": [
+      2503,
+      2504,
+      2505
+    ],
+    "channel_field": 9,
+    "note_field": 47,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  },
+  {
+    "record": 32,
+    "record_offset": 2573,
+    "rgb_offset": 2577,
+    "rgb_offsets": [
+      2577,
+      2578,
+      2579
+    ],
+    "channel_field": 9,
+    "note_field": 76,
+    "black": "000000",
+    "white": "FFFFFF",
+    "following_byte": 255,
+    "physical_mapping": "unconfirmed; do not assume bank 2 physical order"
+  }
+]
