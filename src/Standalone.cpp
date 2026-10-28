@@ -1,6 +1,7 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 #include "Editor.h"
 #include "LedFeedback.h"
+#include "../tests/LedWorkerTests.h"
 #include <bitset>
 #if JUCE_WINDOWS
 #include <windows.h>
@@ -39,7 +40,7 @@ public:
  }
  void page(int d){auto& g=panel.getGrid();g.baseNote=juce::jlimit(0,112,g.baseNote+d);g.repaint();}
 private:
- meetstep::LedFeedback leds;juce::String ledOutputId,ledInputId;
+ meetstep::LedFeedback leds;juce::String ledOutputId,ledInputId;bool ledWaitForAck=false;
  void timerCallback() override {
   std::array<int,16> values{};for(int i=0;i<16;++i)values[i]=model.velocity(model.currentPattern(),model.selectedNote(),i);
   leds.update(values);
@@ -87,38 +88,41 @@ private:
  void openSettings(){
   auto ins=juce::MidiInput::getAvailableDevices();auto outs=juce::MidiOutput::getAvailableDevices();
   struct SettingsContent:juce::Component{~SettingsContent() override{deleteAllChildren();}};
-  auto* content=new SettingsContent;content->setSize(520,270+int(ins.size())*28);
+  auto* content=new SettingsContent;content->setSize(520,310+int(ins.size())*28);
   std::vector<juce::ToggleButton*> checks;
   int y=12;for(auto d:ins){auto* b=new juce::ToggleButton(d.name);content->addAndMakeVisible(b);b->setBounds(12,y,490,26);y+=28;checks.push_back(b);for(auto& i:inputs)if(i->getIdentifier()==d.identifier)b->setToggleState(true,juce::dontSendNotification);}
   auto* out=new juce::ComboBox;content->addAndMakeVisible(out);out->setBounds(12,y,490,30);out->addItem("No MIDI output",1);int id=2;for(auto d:outs)out->addItem(d.name,id++);out->setSelectedId(1);if(output)for(int i=0;i<outs.size();++i)if(outs[i].identifier==output->getIdentifier())out->setSelectedId(i+2);
   y+=40;
-  auto* ledLabel=new juce::Label;content->addAndMakeVisible(ledLabel);ledLabel->setText("LED feedback device / ACK input",juce::dontSendNotification);ledLabel->setBounds(12,y,490,24);y+=26;
+  auto* ledLabel=new juce::Label;content->addAndMakeVisible(ledLabel);ledLabel->setText("LED feedback device (SysEx output)",juce::dontSendNotification);ledLabel->setBounds(12,y,490,24);y+=26;
   auto* ledOut=new juce::ComboBox;content->addAndMakeVisible(ledOut);ledOut->setBounds(12,y,490,30);ledOut->addItem("LED feedback disabled",1);id=2;for(auto d:outs)ledOut->addItem(d.name,id++);ledOut->setSelectedId(1);for(int i=0;i<outs.size();++i)if(outs[i].identifier==ledOutputId)ledOut->setSelectedId(i+2);
   y+=36;auto* ledIn=new juce::ComboBox;content->addAndMakeVisible(ledIn);ledIn->setBounds(12,y,490,30);ledIn->addItem("Select SMK input for LED acknowledgements",1);id=2;for(auto d:ins)ledIn->addItem(d.name,id++);ledIn->setSelectedId(1);for(int i=0;i<ins.size();++i)if(ins[i].identifier==ledInputId)ledIn->setSelectedId(i+2);
+  y+=36;auto* waitAck=new juce::ToggleButton("Wait for LED ACK (diagnostic)");content->addAndMakeVisible(waitAck);waitAck->setBounds(12,y,490,26);waitAck->setToggleState(ledWaitForAck,juce::dontSendNotification);
+  ledIn->setEnabled(ledWaitForAck);waitAck->onClick=[waitAck,ledIn]{ledIn->setEnabled(waitAck->getToggleState());};
   auto* apply=new juce::TextButton("Apply");auto* close=new juce::TextButton("Close");content->addAndMakeVisible(apply);content->addAndMakeVisible(close);apply->setBounds(280,y+44,100,30);close->setBounds(392,y+44,100,30);
   juce::DialogWindow::LaunchOptions options;options.content.setOwned(content);options.dialogTitle="MIDI settings";options.dialogBackgroundColour=juce::Colour(0xff242b36);options.useNativeTitleBar=true;options.resizable=false;
   auto* dialog=options.launchAsync();juce::Component::SafePointer<juce::DialogWindow> window(dialog);
   close->onClick=[window]{if(window)window->exitModalState(0);};
-  apply->onClick=[this,checks,ins,outs,out,ledOut,ledIn]{
+  apply->onClick=[this,checks,ins,outs,out,ledOut,ledIn,waitAck]{
    leds.close();
    for(auto& i:inputs)i->stop();inputs.clear();transport(false,false);
    juce::String error;
    {const juce::ScopedLock guard(lock);output.reset();if(out->getSelectedId()>1){output=juce::MidiOutput::openDevice(outs[out->getSelectedId()-2].identifier);if(!output)error="Cannot open output. ";}}
-   for(int i=0;i<ins.size();++i)if(checks[i]->getToggleState()){auto input=juce::MidiInput::openDevice(ins[i].identifier,this);if(input){input->start();inputs.push_back(std::move(input));}else error+="Cannot open "+ins[i].name+". ";}
+   ledWaitForAck=waitAck->getToggleState();
    ledOutputId=ledOut->getSelectedId()>1?outs[ledOut->getSelectedId()-2].identifier:juce::String();
-   ledInputId=ledIn->getSelectedId()>1?ins[ledIn->getSelectedId()-2].identifier:juce::String();
+   ledInputId=ledWaitForAck&&ledIn->getSelectedId()>1?ins[ledIn->getSelectedId()-2].identifier:juce::String();
+   for(int i=0;i<ins.size();++i)if(checks[i]->getToggleState()){auto input=juce::MidiInput::openDevice(ins[i].identifier,this);if(input){input->start();inputs.push_back(std::move(input));}else error+="Cannot open "+ins[i].name+". ";}
    bool shared=false;for(auto& input:inputs)if(input->getIdentifier()==ledInputId)shared=true;
    if(ledOutputId.isNotEmpty()){
     if(output&&output->getIdentifier()==ledOutputId)error+="Choose a separate sequencer output and LED device. ";
-    else error+=leds.open(ledOutputId,ledInputId,shared);
+    else error+=leds.open(ledOutputId,ledInputId,shared,ledWaitForAck);
    }
-   status.setText(error.isNotEmpty()?error:juce::String(inputs.size())+" inputs | "+(output?output->getName():"No output"),juce::dontSendNotification);
+   status.setText(error.isNotEmpty()?error:juce::String(inputs.size())+" inputs | "+(output?output->getName():"No output")+(ledOutputId.isEmpty()?"":" | LED: "+juce::String(ledWaitForAck?"ACK mode":"send only")),juce::dontSendNotification);
   };
  }
 };
 class App : public juce::JUCEApplication {
 public:
- const juce::String getApplicationName() override{return "MeetStep";}const juce::String getApplicationVersion() override{return "0.2.2";}
+ const juce::String getApplicationName() override{return "MeetStep";}const juce::String getApplicationVersion() override{return "0.2.3";}
  class Window:public juce::DocumentWindow{public:Window():DocumentWindow("MeetStep Standalone",juce::Colours::black,allButtons){setUsingNativeTitleBar(true);setContentOwned(new Main,true);centreWithSize(960,760);setVisible(true);}void closeButtonPressed() override{juce::JUCEApplication::getInstance()->systemRequestedQuit();}};
  std::unique_ptr<Window> window;void initialise(const juce::String& args)override{
  if(args.contains("--led-self-test")){
@@ -126,7 +130,8 @@ public:
   const auto packet=meetstep::ledPacket(0,127);
   const bool ok=packet.getRawDataSize()==sizeof(expected)&&std::memcmp(packet.getRawData(),expected,sizeof(expected))==0
     &&meetstep::ledColour(0)==std::array<int,4>{0,0,0,0}
-    &&meetstep::ledColour(64)==std::array<int,4>{95,110,128,255};
+    &&meetstep::ledColour(64)==std::array<int,4>{95,110,128,255}
+    &&testLedWorker();
   setApplicationReturnValue(ok?0:1);quit();return;
  }
  window=std::make_unique<Window>();}void shutdown()override{window.reset();}

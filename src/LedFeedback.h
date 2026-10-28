@@ -4,6 +4,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <functional>
 namespace meetstep {
 inline std::array<int,4> ledColour(int velocity) {
     const int v=juce::jlimit(0,127,velocity);
@@ -22,21 +23,33 @@ inline juce::MidiMessage ledPacket(int pad,int velocity) {
     if(bits)encoded.push_back(acc&127);
     return juce::MidiMessage::createSysExMessage(encoded.data(),(int)encoded.size());
 }
-// Own MIDI devices and a worker: ACK waits never block the musical clock or UI.
+// Dedicated output worker; input SysEx is never echoed. ACK is optional.
 class LedFeedback : private juce::MidiInputCallback {
 public:
     ~LedFeedback(){close();}
-    juce::String open(const juce::String& out,const juce::String& in,bool sharedInput=false){
+    juce::String open(const juce::String& out,const juce::String& in,bool sharedInput=false,bool requireAck=false){
         close();if(out.isEmpty())return {};
         output=juce::MidiOutput::openDevice(out);
-        if(!sharedInput)input=juce::MidiInput::openDevice(in,this);
-        if(!output||(!sharedInput&&!input)){close();return "Cannot open LED feedback device / ACK input";}
-        {std::lock_guard<std::mutex> g(mutex);quit=false;failed=false;desired.fill(0);sent.fill(-1);}
-        if(input)input->start();worker=std::thread([this]{run();});return {};
+        if(requireAck&&!sharedInput)input=juce::MidiInput::openDevice(in,this);
+        if(!output||(requireAck&&!sharedInput&&!input)){close();return "Cannot open LED feedback device / ACK input";}
+        if(input)input->start();
+        start([this](const juce::MidiMessage& message){output->sendMessageNow(message);},requireAck);return {};
+    }
+    // The same worker can use a fake MIDI sink in regression tests.
+    void start(std::function<void(const juce::MidiMessage&)> sink,bool requireAck,
+               std::chrono::milliseconds timeout=std::chrono::seconds(2)){
+        stopWorker();
+        {std::lock_guard<std::mutex> g(mutex);quit=false;failed=false;ack=false;waiting=false;
+         waitForAck=requireAck;ackTimeout=timeout;send=std::move(sink);desired.fill(0);sent.fill(-1);}
+        worker=std::thread([this]{run();});
     }
     void close(){
+        stopWorker();if(input)input->stop();input.reset();output.reset();
+    }
+    void stopWorker(){
         {std::lock_guard<std::mutex> g(mutex);quit=true;}wake.notify_all();
-        if(worker.joinable())worker.join();if(input)input->stop();input.reset();output.reset();
+        if(worker.joinable())worker.join();
+        {std::lock_guard<std::mutex> g(mutex);waiting=false;failed=false;}
     }
     void update(const std::array<int,16>& values){std::lock_guard<std::mutex> g(mutex);desired=values;wake.notify_all();}
     bool hasFailed(){std::lock_guard<std::mutex> g(mutex);return failed;}
@@ -44,7 +57,9 @@ public:
 private:
     std::unique_ptr<juce::MidiInput> input;std::unique_ptr<juce::MidiOutput> output;
     std::mutex mutex;std::condition_variable wake;std::thread worker;
-    std::array<int,16> desired{},sent{};bool quit=true,failed=false,ack=false,waiting=false;
+    std::array<int,16> desired{},sent{};bool quit=true,failed=false,ack=false,waiting=false,waitForAck=false;
+    std::function<void(const juce::MidiMessage&)> send;
+    std::chrono::milliseconds ackTimeout{2000};
     void handleIncomingMidiMessage(juce::MidiInput*,const juce::MidiMessage& m) override {
         static const unsigned char expected[]={0xf0,0,0x32,1,8,0,0,0,0,0x7f,1,0xf7};
         if(m.getRawDataSize()!=sizeof(expected)||std::memcmp(m.getRawData(),expected,sizeof(expected)))return;
@@ -55,9 +70,9 @@ private:
         while(!quit){
             int pad=-1;for(int i=0;i<16;++i)if(sent[i]!=desired[i]){pad=i;break;}
             if(pad<0){wake.wait(g);continue;}
-            const int value=desired[pad];ack=false;waiting=true;
-            g.unlock();output->sendMessageNow(ledPacket(pad,value));g.lock();
-            if(!wake.wait_for(g,std::chrono::seconds(2),[this]{return ack||quit;})){
+            const int value=desired[pad];ack=false;waiting=waitForAck;
+            g.unlock();send(ledPacket(pad,value));g.lock();
+            if(waitForAck&&!wake.wait_for(g,ackTimeout,[this]{return ack||quit;})){
                 waiting=false;failed=true;return; // no retries after uncertain delivery
             }
             waiting=false;if(quit)return;sent[pad]=value;
