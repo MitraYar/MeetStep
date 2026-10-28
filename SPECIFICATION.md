@@ -1,6 +1,18 @@
-# SMK 37 Pro MIDI Step Sequencer — SPEC (Draft 0.5)
+# MeetStep — спецификация секвенсора для SMK 37 Pro
 
-Status: discovery / not implementation-ready. Updated with questionnaire rounds 1–4 decisions on 2026-10-28. Platform: Windows. Language of requirements: Russian.
+Источник: пользовательский `SMK37_Sequencer_SPEC_v0.5_regenerated.md`, версия 0.5, с последующими дополнениями. Полный текст требований и решений сохранён ниже. Платформа — Windows standalone.
+
+Разработка секвенсора разрешена. Цель — реализовать максимум функций этой спецификации поэтапно; текущий 0.2.2 ещё не является полным MVP. Статус реализации и проверок: [PROJECT_STATUS](docs/PROJECT_STATUS.md).
+
+Порядок развития:
+1. Музыкальное ядро: 64 шага, 16 паттернов, каналы инструментов 1–9, переключение в конце цикла, MIDI Clock, сохранение проекта.
+2. Редактирование: Undo/Redo, безопасное копирование, длина с сохранением скрытых шагов, режимы треков и Mute.
+3. Выразительность: velocity/gate, Groove/Velocity/Gate Formula, Preview/Apply/Cancel, Humanize, Scale Velocity, акценты, Drone и Legato.
+4. Управление: дополнительные QWERTY/цифровые команды и вкладка маппинга клавиш.
+
+LED-утилиты и VST3 заморожены. LED-обратная связь развивается только внутри секвенсора. Исследование и управление пресетами устройства не входят в текущую работу; музыкальные паттерны/сцены остаются частью продукта.
+
+В исторических разделах CONFIRMED означает согласованное требование, а не готовую функцию. Более поздние решения уточняют ранние; OPEN/PROPOSED не становятся согласованными автоматически. Обновления пользователя и актуальный статус имеют приоритет над прежними запретами начинать MVP.
 
 > Latest additions: section 23 records LED validation and transport/PC keyboard requirements from 2026-10-28. It supersedes conflicting earlier text; proposed pad positions remain proposals.
 
@@ -300,7 +312,7 @@ Quantize, swing, timing shift, invert steps, elaborate ALL NOTES editing, more t
 
 
 ## 23. LED validation and keyboard controls — 2026-10-28
-These latest user requirements override contradictory earlier transport wording. They do not approve the complete proposed CH10/CH11 layouts or authorize starting the sequencer during LED work.
+These latest user requirements override contradictory earlier transport wording. They do not approve the complete proposed CH10/CH11 layouts. Sequencer development was subsequently authorized; see the current status linked above.
 
 ### Hardware findings [USER-TESTED]
 - The LED tester's Maximum mode is stable in the user's testing: one contiguous four-byte write per pad, no added pauses, ACK still required. This is acceptance of the tested mode, not a measured guarantee that every 32-pad refresh completes within 100 ms.

@@ -1,218 +1,55 @@
-# MeetStep handoff / current project status
+# MeetStep — актуальный статус
 
-This file is the entry point for resuming work in a new Codex task.
+Точка входа для продолжения работы. Требования: [полная спецификация](../SPECIFICATION.md).
+Рабочая ветка: `build/smk-rgb-tester`; версия секвенсора в исходниках — **0.2.2**.
 
-**Latest decision: LED utilities are FROZEN by user instruction.** Technical
-feasibility is established; no further utility features or releases. Sequencer
-builds are now authorized. Target maximum feasible coverage of the supplied
-specification over subsequent builds, keeping unresolved semantics explicit.
+## Решения пользователя
 
-Standalone 0.2.1 is an incremental transport build, not the completed spec MVP:
-Space (autorepeat suppressed) and Bank2 note 63 on CH10/11 toggle Play/Pause.
-It retains the existing MIDI Stop/Continue behavior and next-clock-tick resume;
-clock halts while paused. Start still resets position. BPM is limited to 30–240.
-Hardware/DAW validation of these controls is pending. Next milestones are the
-64-step/16-pattern multichannel core, safe editing and persistence, then formula
-editing and configurable PC bindings. Existing 0.2.0 limitations below still
-apply until those milestones are implemented.
+- Развивать Windows standalone, поэтапно реализовать максимум функций спецификации.
+- LED-утилиты заморожены: возможность управления проверена, новых функций/билдов утилит не нужно.
+- VST3 заморожен: не разрабатывать и не собирать.
+- Исследование/переключение пресетов устройства сейчас не нужно. Не путать с музыкальными паттернами/сценами секвенсора.
+- Интерфейс должен помещаться в рабочую область Windows 11 на 1600×900 с панелью задач; при необходимости прокрутка, основные кнопки доступны.
+- Не возвращать отвергнутые MIDI-транспорты. Краткие технические ограничения — в [LED.md](protocol/LED.md).
 
-**2026-10-28: LED transport rollback.** Only commit `2770a7a` (Build bounded
-Windows SMK pad-one LED diagnostic) is accepted as the MIDI/SysEx baseline.
-The later LED implementations at 5b53c6e, d373abe, ec35bf8 and 0feb67f
-are rejected by user instruction; do not reuse their transport. `tools/smk_led_probe.py` is restored verbatim to that
-baseline. Rejected RGB tester/launcher removed; the baseline has manual Actions
-packaging. See [regression evidence](protocol/smk-led-regression.md).
+## Реализовано
 
-Use the existing checkout; do not create a worktree for routine tasks.
+6 паттернов × 16 шагов, 128 высот нот, выход на канал 1, gate в один шаг.
+Выбор паттерна пока немедленный. Мышь рисует/стирает; пэды первой банки CH10
+переключают шаги выбранной ноты. Ноту выбирают SMK-клавиатура и редактирование мышью.
+Velocity включённого пэдом шага берётся из Note On; мышь создаёт velocity 100.
+Velocity сохраняется и воспроизводится; старые проекты загружаются со значением 100.
 
-## Scope and product
+BPM 30–240, MIDI Clock 24 PPQN только при воспроизведении. Start сбрасывает позицию;
+Stop гасит ноты; Continue продолжает. Space и note 63 CH10/CH11 переключают Play/Pause
+через существующие Stop/Continue, продолжая со следующего тика. Slash — Audition,
+comma/period — видимый диапазон нот. Дополнительный QWERTY/цифровой маппинг ещё не реализован.
 
-Windows standalone MIDI drum step sequencer driven by SMK 37 Pro, aimed at
-working mostly on the controller rather than looking at the monitor.
-VST3 is frozen by user instruction: no VST3 work/builds/resources. Current
-Windows CI builds/packages standalone only. Original ambition was 32 steps;
-current prototype is 16. Six independent patterns, each with drum-note rows.
-Pad bank 2 is reserved for future pattern/utility functions, not automatically
-steps 17–32. Proposed undo/redo/hold-to-clear mappings are not implemented.
-KeyStep Pro and Launchpad Pro MK3 are design references for future planning.
+Settings: несколько MIDI-входов, выход секвенсора, отдельное LED-устройство и вход ACK.
+Общий вход для игры и ACK используется без повторного открытия. Выход секвенсора и LED
+должны различаться. Паттерны/BPM сохраняются при нормальном выходе, выбор устройств — нет.
 
-## Implemented and user-validated
+Подсветка: 16 шагов выбранной ноты, банк команд не изменяется. Пусто — чёрный,
+velocity 127 — RGB 190/220/255, промежуточные значения линейно масштабируют RGB.
+Отдельный поток, запись RGB+enable одним сообщением, ACK, без искусственных пауз,
+отправка только изменений. Таймаут 2 с останавливает подсветку до повторного Apply.
 
-Standalone 0.2.0 runs on the user's Windows PC. It has multiple MIDI inputs,
-one output, device settings with Apply/Close, master Clock/Start/Stop/Continue
-and sequence-note output. DAW should be the MIDI clock slave (Ableton tested
-by user at a broad functional level; precise clock performance not measured).
-Computer shortcuts act with MeetStep focused. Audition is off by default;
-physical slash toggles it ('/' English, '.' Russian). Comma/period ('б'/'ю')
-page notes. MIDI drum selection follows the visible range automatically.
-Six patterns; mouse left draws/right erases; drags stay on one row. Notes start
-at C1=36 at the bottom. BPM/patterns save on normal exit; device choices do not.
-Fixed velocity 100, one-step gate, output channel 1. See source for exact logic.
+## Что проверено и что ещё проверить
 
-## Agreed but pending main-app features
+- Пользователь подтвердил работу standalone 0.2.0 и стабильность режима «Максимум» LED-утилиты.
+- Поле после RGB — вкл/выкл: ниже 50% выключено, выше включено. Точная граница не измерена. Использовать 0/255; значение 204 не даёт 80% яркости.
+- 0.2.2 локально компилируется; тест модели и `--led-self-test` проходят. Последний сравнивает SysEx с замороженной Python-утилитой и проверяет градиент.
+- JUCE LED-транспорт, Play/Pause с DAW и физический вид градиента ещё требуют проверки пользователем. Локальные тесты не доказывают успешную Windows-сборку или работу железа.
+- Текущий прототип не имеет Undo; Clear стирает сразу. До готовности безопасных операций не представлять его полным MVP.
 
-Master keyboard dropdown separate from additional inputs; independent keyboard
-feedback output; channel-6 CC56 new-step velocity, CC57 new-step length,
-CC63 tempo. Existing steps should retain stored properties. Value mappings are
-not all agreed. Space Start/Stop and Ctrl+physical slash Settings are pending.
-Plain slash retains Audition. Details: next-build.md.
+## Следующие этапы
 
-## Controller and LED evidence
+1. 64 шага, 16 паттернов, инструментальные каналы 1–9, переключение в конце цикла, хранение проекта.
+2. Undo/Redo, безопасное копирование, длина без потери скрытых шагов, Seq/Keyboard/Both и Mute.
+3. Velocity/gate-редакторы, формулы и прочая выразительность из спецификации.
+4. Дополнительные QWERTY/цифровые команды и вкладка Options → Key mappings.
 
-Full MIDI note/CC map: controller.md. Keyboard is USB-connected; official
-editor is MidiSuite. User-confirmed LED output candidate is SMK-37 Pro Midi
-(the first logical port; Windows numeric suffix/index can change).
-SMC-PAD reference: https://github.com/spectalive/smc-pad, inspected commit
-8297442586df3ba1239485b54b272789eb4f1ade. Shared packet framing/encoding is now
-supported by actual SMK captures; do not copy SMC-PAD memory addresses.
-
-LED changes require Apply in MidiSuite and disappear on power cycle unless
-Save to device is used separately. Do not use persistent Save for feedback.
-Pad-1 original probe changed colour according to user. The newer 16-pad palette
-probe was reported not to work; exact ACK/timeout log is unknown.
-
-Findings:
-- smk-preset-findings.md: offline two-export RGB comparison and USB port names.
-- protocol/smk-usb-colour.md: captured pad-1 RGB writes and ACKs.
-- protocol/smk-pad1-to-five-capture.md: pads 1–5, per-pad RGB + brightness byte.
-- protocol/smk-preset-switch.md: complete presets 0/7, active selector, stride;
-  likely missing active-preset handling in the current probe.
-- protocol/*.json: extracted evidence, not commands to replay blindly.
-- smk-diagnostics.md: passive input monitoring limitations.
-
-Probe tools are separate from MeetStep, not integrated feedback. The accepted
-pad-one baseline only writes captured preset-0 offsets 0x11B–0x11D and waits
-for ACKs. It does not detect the active preset or support arbitrary pads.
-The user confirmed two banks of 16 and Apply without Save. The all-black to
-all-white capture identifies 32 RGB triples; physical ordering of records
-17–32 is still unconfirmed. The requested 32-pad RGB sliders and random
-colour/GUI selection on pad press remain pending a replacement based on the
-accepted transport. No hardware-ready replacement is claimed.
-
-## Evidence availability
-
-Source, docs and extracted findings are committed. Raw uploaded .pcapng/.smk37
-files are not in Git and may need reattachment in a new task. Attachment paths
-and /tmp files are not durable. No claim that all hardware details or firmware
-behavior are resolved. Some earlier documents describe historical milestones;
-this file and the latest capture-specific findings take precedence.
-
-### Latest utility status
-
-The new 788-byte user capture proves three 21-byte SysEx writes and three
-12-byte ACKs for the original pad-one baseline. The last LED and RGB utilities
-fail before either MIDI port opens on Windows: `python-rtmidi==1.5.8` does not
-expose the `set_buffer_size` method called by those implementations. The
-previous Linux GUI tests did not exercise that Windows path. The initial
-palette failure remains unexplained; it did not contain this call. See the
-regression report for confirmed facts versus hypotheses and regression tests.
-
-### Simple pad-colour replacement, 0.1.0
-
-The user requested a new simple manual colour utility after the rollback.
-`tools/smk_pad_colour.py` and `tools/smk_pad_colour_gui.py` implement it from
-the accepted pad-one packet encoder and Mido input/output/callback path.
-32 selectable RGB records; explicit Send button; three short writes with ACKs
-and 100 ms spacing. No raw RtMidi API, buffer override, preset reads, Save,
-brightness writes or automatic slider traffic. Select preset 1 (index 0) in
-MidiSuite before use, then close MidiSuite. Bank-2 physical ordering remains
-unconfirmed. Random-on-note behaviour is deferred from this simplified test.
-
-The original pad-one source is unchanged. The previously rejected builds stay
-withdrawn. The new implementation is a test candidate, not yet hardware-verified.
-14 local tests pass, including the real Mido adapter with API-constrained RtMidi
-test doubles, captured bytes, ACK/timeout/cancel, cleanup and GUI Send flow.
-A separate `SMK Simple Pad Colour Windows` workflow builds the new EXE and
-requires a packaged GUI/backend smoke test before artifact upload. Local Linux
-checks do not establish successful Windows Actions execution or hardware results.
-See `tools/SMK-PAD-COLOUR.md` for user instructions.
-
-### Brightness and batch test, 0.2.0
-
-User reports the simple 0.1.0 colour test appears to work; stability is not yet
-established. New capture `all white to lights off.pcapng` independently proves
-32 brightness fields at 0x11E + (record-1)*0x4A: exactly 32 FF→00 differences,
-RGB unchanged FFFFFF, both full uploads match readback. This supersedes the
-previous uncertainty about the byte following RGB for bank 2. See
-`protocol/smk-32-brightness.md` and the extracted JSON address fixture.
-
-0.2.0 adds a single-pad brightness slider, one-pass All pads, and optional
-full/reduced alternation by record number. The slider controls one or all
-pads on a 0–255 scale (default 255). With alternation it controls the reduced
-percentage, default 80%: odd records 255, even records 204. Switching modes
-restores the previous normal/percentage slider values.
-The same accepted short-write Mido transport is retained, with one pair of
-ports per batch, ACK per byte, 100 ms spacing and stop on first error.
-128 messages take about 13 seconds. No Save. Hardware acceptance of the new
-brightness/batch behaviour remains to be checked; bank-2 physical order is
-still provisional.
-
-### Speed experiment, 0.3.0
-
-Radio modes: fast (single-byte writes, zero gap, default), maximum
-(experimental contiguous RGB+brightness write per pad, zero gap), balanced
-(single-byte writes, 5 ms gap). ACK remains mandatory in every mode. Maximum
-uses 32 packets for all pads instead of 128. Four-byte acceptance on the device
-is still unverified; generic block encoding is checked against a real captured
-1024-byte write. The original pad-one baseline remains unchanged.
-
-Elapsed exchange time is measured from first send to last matching ACK arrival;
-port lifecycle and deferred trace rendering are excluded. Failed/stopped runs
-are labelled incomplete with sent/ACK counts. GUI reports completed counts/time.
-Hardware throughput and visible LED update timing still require user testing.
-
-### Window fit, 0.3.1, and future MVP source
-
-User reports 1600×900 Windows 11 display with a bottom taskbar. The LED tester
-now uses the monitor work area for initial sizing, a vertically scrollable
-settings canvas and a fixed Send/Stop/status footer. Test at normal/enlarged
-Tk scaling, including wheel and Page Up/Page Down navigation.
-
-The user supplied `docs/spec/SMK37_Sequencer_SPEC_v0.5_regenerated.md` as the
-basis of a future MVP after LED investigation. Initially imported verbatim;
-section 23 now records explicitly requested updates. It is requirements
-context for that future task, not authorization
-to begin MVP development during the LED window fix. The document contains
-CONFIRMED decisions as well as OPEN/PROPOSED items; read the full decision
-logs when that task begins. Source file supplied on 2026-10-28.
-
-
-### Latest user validation and specification update, 2026-10-28
-
-This supersedes the earlier unverified Maximum-mode and proportional-brightness
-assumptions above. User reports Maximum mode works stably. No measured sub-100ms
-completion guarantee has been supplied. The fourth LED byte behaves as on/off:
-below 50% off, above 50% on; exact boundary unmeasured. 255/204 alternation does
-not produce different brightness. Use 0/255 for LED enable in future sequencer
-code. Working tester transport and original pad-one baseline are unchanged.
-
-Spec section 23 adds Play/Pause on CH10 and CH11 Bank2 and PC Space to MVP
-requirements, with common note 63 proposed (layout not yet approved). Pause
-resume/DAW-clock semantics remain open. QWERTY editing duplicates, number-row
-formula commands and an Options → Key mappings tab are recorded for builds
-after the current MVP. No sequencer or shortcut implementation is included in
-this documentation update.
-
-### Standalone 0.2.2 — LED feedback integration
-
-Frozen utility files are unchanged. Sequencer Settings now has an independent
-LED feedback device and ACK input selector; select the SMK output and its input.
-An input already enabled for musical control is shared for ACK reception.
-Use a separate DAW output for sequence notes; identical sequence/LED output
-selection is rejected to avoid opening a Windows device twice.
-
-Bank1's 16 pads show the selected pitch in the current pattern. Mouse editing
-also selects that pitch. Empty=RGB 0/0/0 with enable 0; velocity 127=190/220/255;
-intermediate values linearly scale RGB, with enable 255. Bank2 commands are
-untouched. Pad hits store their velocity when enabling a step; mouse-created
-steps default to 100. Playback and project persistence retain these values;
-old bitmask projects load at velocity 100.
-
-A dedicated worker sends contiguous RGB+enable writes with no added gap and
-one outstanding ACK. Updates coalesce to latest state, unchanged pads are not
-resent. A two-second ACK timeout stops feedback visibly until Settings Apply;
-no automatic retries or persistent Save commands. Device selections currently
-must be reapplied after restart. The packaged --led-self-test compares a packet
-against the frozen Python utility and checks gradient endpoints/midpoint.
-Hardware validation remains pending for the JUCE backend (encoding is reused,
-not the Python MIDI library). Current scope remains 16 steps / six patterns.
+Сохраняются ранее запрошенные, ещё не реализованные настройки: отдельный Master keyboard,
+дополнительные входы, CC56 velocity новых шагов, CC57 длина новых нот, CC63 BPM (CH6),
+Ctrl + физический slash для Settings. Точные диапазоны CC и пересечения команд нужно
+согласовать с актуальной спецификацией. Не добавлять неподтверждённые разрушительные жесты.

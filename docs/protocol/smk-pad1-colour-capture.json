@@ -1,8 +1,0 @@
-[
-  {"frame": 12153, "command": "write RGB byte", "address": "0x11B", "value": "0x4C"},
-  {"frame": 12155, "command": "ack", "value": "ok"},
-  {"frame": 12157, "command": "write RGB byte", "address": "0x11C", "value": "0xE4"},
-  {"frame": 12159, "command": "ack", "value": "ok"},
-  {"frame": 12161, "command": "write RGB byte", "address": "0x11D", "value": "0x37"},
-  {"frame": 12163, "command": "ack", "value": "ok"}
-]

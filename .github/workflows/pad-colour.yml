@@ -1,16 +1,6 @@
 name: SMK Simple Pad Colour Windows
 on:
-  push:
-    paths:
-      - 'tools/smk_pad_colour.py'
-      - 'tools/smk_pad_colour_gui.py'
-      - 'tools/SMK-PAD-COLOUR.md'
-      - 'tests/test_smk*.py'
-      - 'docs/protocol/smk-32-rgb-addresses.json'
-      - 'docs/protocol/smk-32-brightness.json'
-      - 'docs/protocol/smk-captured-block-write.json'
-      - 'docs/protocol/smk-pad-one-working-capture.json'
-      - '.github/workflows/pad-colour.yml'
+  # Frozen utility: manual reproduction only; no automatic releases.
   workflow_dispatch:
 permissions:
   contents: read

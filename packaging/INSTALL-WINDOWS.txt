@@ -1,41 +1,36 @@
-MeetStep 0.2.0 — Standalone + VST3 editor (Windows x64)
+MeetStep Standalone — Windows x64
 
-1. Close Ableton Live.
-2. Extract this archive. Keep the complete MeetStep.vst3 folder intact.
-3. Copy MeetStep.vst3 to C:\Program Files\Common Files\VST3\
-   (Windows may ask for administrator permission.)
-4. Open Live. In Preferences > Plug-Ins enable VST3 system folders,
-   then rescan. Insert MeetStep on a MIDI track.
-5. To edit using SMK 37 Pro, select its MIDI input with All Channels,
-   and arm the track or set Monitor to In.
+Распакуйте ZIP и запустите MeetStep Standalone.exe. Python и установка VST3
+не требуются. Приложение отправляет MIDI; звук воспроизводит DAW/инструмент.
 
-This build tests the editor only: six patterns, 16 steps, mouse editing,
-SMK pad mapping and saving with the Live project. It does not yet generate
-MIDI or sound. Do not expect Drum Rack playback in this build.
+Settings:
+1. Отметьте MIDI-входы SMK и нужных клавиатур.
+2. Для нот и Clock выберите выход в DAW. На одном ПК можно создать виртуальное
+   MIDI-устройство через loopMIDI и выбрать его входом в DAW.
+3. Для подсветки выберите отдельное LED feedback device (выход SMK) и вход SMK
+   для ACK. Уже выбранный игровой вход используется совместно, без повторного
+   открытия. Для отключения подсветки выберите LED feedback disabled.
+4. Нажмите Apply. Close закрывает настройки. Устройства выбираются заново
+   после перезапуска. При недоступности устройства закройте MidiSuite и другие
+   приложения, которые могут удерживать его MIDI-вход/выход.
 
-Notes outside MIDI channel 10 select a drum. Bank-1 pads on channel 10
-edit steps. Left mouse button draws; right button erases; drag edits a row.
-Clear pattern / Clear all erase immediately. There is no undo yet.
+DAW должна принимать внешний MIDI Clock. В Ableton включите Track и Sync
+для входа от MeetStep, включите EXT и направьте MIDI на инструмент с Monitor In.
+Не направляйте выход DAW обратно во вход MeetStep: это может создать MIDI-петлю.
 
-Standalone 0.2.0
----------------
-Run MeetStep Standalone.exe (no audio driver required).
-Settings: check SMK and any additional MIDI inputs; select one MIDI output.
-Apply activates selections; Close dismisses the window. Stop playback before
-changing settings. Ports must be selected again after restarting the app.
+Start начинает с шага 1; Stop гасит ноты; Continue продолжает.
+Space и нижний правый пэд второй банки (note 63) CH10/CH11 — Play/Pause.
+Slash ('/' EN, '.' RU) переключает Audition; comma/period ('б'/'ю') меняют
+видимый диапазон нот. Клавиатурное управление действует при фокусе приложения.
 
-For DAW routing on the same Windows PC create a virtual MIDI port (for example
-with loopMIDI). Select that port as MeetStep output and as DAW input.
-In Ableton enable Track and Sync for this input, enable EXT, and route MIDI
-to Drum Rack with Monitor In. Avoid sending this output back into MeetStep.
-Some Windows MIDI drivers cannot share an input: close SMK input in the DAW
-if MeetStep reports that it cannot open it.
+Текущий прототип: 6 паттернов, 16 шагов, выход канала 1, gate в один шаг.
+Пэды первой банки CH10 переключают шаги выбранной ноты. Ноту выбирают клавиатура
+SMK или редактирование мышью. Левая кнопка рисует, правая стирает; drag — строка.
+Velocity берётся из включающего нажатия пэда; мышь создаёт velocity 100.
+Паттерны, velocity и BPM сохраняются при нормальном выходе.
+Clear pattern / Clear all стирают сразу, Undo пока нет.
 
-Start resets to step 1; Stop silences notes; Continue resumes.
-Clock is 24 PPQN while playing. The sequence is 16 sixteenth notes, output
-channel 1, velocity 100, gate one step. These are fixed in this first build.
-Audition is off initially. The slash physical key toggles it on Windows
-('/' in English, '.' in Russian). Comma/period physical keys ('б'/'ю')
-page the visible note range. Shortcuts apply when MeetStep has focus.
-Patterns and BPM are saved on normal exit. Settings are not persisted yet.
-SMK LED feedback is not implemented: its external control protocol is unconfirmed.
+LED выбранной ноты: пусто — чёрный; velocity 127 — синевато-белый;
+промежуточные значения — градиент. Подсвечиваются только 16 шагов банка 1.
+При таймауте ACK подсветка останавливается: проверьте устройства и повторите Apply.
+Транспорт JUCE и вид градиента в 0.2.2 ещё требуют проверки на контроллере.
