@@ -1,23 +1,36 @@
 name: Windows Standalone
 on:
   push:
-    paths: ['src/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
+    paths: ['src/**', 'tests/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
   pull_request:
-    paths: ['src/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
+    paths: ['src/**', 'tests/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   build:
     runs-on: windows-2022
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install oracle dependency
+        run: python -m pip install mido==1.3.3
+      - name: Check frozen oracle and captured bytes
+        shell: pwsh
+        run: |
+          $blob = git hash-object tests/reference/smk_pad_colour.py
+          if ($LASTEXITCODE -ne 0 -or $blob -ne '456039921131b19026a59e20039984a4adbbae64') { throw 'Frozen LED oracle changed' }
+          python -m unittest discover -s tests -p "test_led_oracle.py" -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Configure Windows x64
-        run: cmake -S . -B build -A x64 -DMEETSTEP_BUILD_STANDALONE=ON -DMEETSTEP_BUILD_PLUGIN=OFF -DBUILD_TESTING=OFF
+        run: cmake -S . -B build -A x64 -DMEETSTEP_BUILD_STANDALONE=ON -DMEETSTEP_BUILD_PLUGIN=OFF -DBUILD_TESTING=ON
       - name: Build
         shell: pwsh
         run: |
-          cmake --build build --config Release --target MeetStepApp --parallel 2 2>&1 | Tee-Object -FilePath build-output.log
+          cmake --build build --config Release --parallel 2 2>&1 | Tee-Object -FilePath build-output.log
           $buildExitCode = $LASTEXITCODE
           if ($buildExitCode -ne 0) {
             $errors = @(Select-String -Path build-output.log -Pattern '(?i)(fatal error|error [A-Z]+[0-9]+|error:|unresolved external)' | Select-Object -Last 20)
@@ -28,16 +41,35 @@ jobs:
             }
           }
           exit $buildExitCode
+      - name: Test controller, golden packets, LED worker and transport
+        shell: pwsh
+        run: |
+          $reportPath = Join-Path $PWD "build/test-results.xml"
+          ctest --test-dir build -C Release --output-on-failure --output-junit $reportPath --no-tests=error
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          [xml]$report = Get-Content build/test-results.xml -Raw
+          if ([int]$report.testsuite.tests -ne 3) { throw 'Expected all three CTest suites to execute' }
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeetStep-0.2.4-validation
+          path: |
+            build/test-results.xml
+            build/Testing/Temporary/LastTest.log
+            build-output.log
+          if-no-files-found: warn
       - name: Package standalone
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item "build/MeetStepApp_artefacts/Release/MeetStep Standalone.exe" package/
           Copy-Item packaging/INSTALL-WINDOWS.txt package/
-          Compress-Archive -Path package/* -DestinationPath MeetStep-0.2.0-Windows-x64.zip
-          Get-FileHash MeetStep-0.2.0-Windows-x64.zip -Algorithm SHA256 | Format-List
+          git rev-parse HEAD | Out-File package/commit.txt -Encoding utf8
+          Compress-Archive -Path package/* -DestinationPath MeetStep-0.2.4-Windows-x64.zip
+          Get-FileHash MeetStep-0.2.4-Windows-x64.zip -Algorithm SHA256 | Format-List
       - uses: actions/upload-artifact@v4
         with:
-          name: MeetStep-0.2.0-Windows-x64
-          path: MeetStep-0.2.0-Windows-x64.zip
+          name: MeetStep-0.2.4-Windows-x64
+          path: MeetStep-0.2.4-Windows-x64.zip
           if-no-files-found: error

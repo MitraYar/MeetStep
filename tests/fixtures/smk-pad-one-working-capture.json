@@ -1,0 +1,85 @@
+{
+  "source": "Build bounded Windows SMK pad-one LED diagnostic.pcapng",
+  "sha256": "93ac496beb45cb3fb2e840459ff507d7a9cd58b6d0e8329b554a11ad83e19a9a",
+  "source_bytes": 788,
+  "messages": [
+    {
+      "start": 1,
+      "end": 1,
+      "time": 1793135257.498584,
+      "ep": 4,
+      "cable": 0,
+      "command": 34,
+      "data": "051b0100000100004c",
+      "wire": "f000320949000040021b020000100000004c2202f7",
+      "length": 21,
+      "region": 5,
+      "address": 283,
+      "count": 1,
+      "value": "4c"
+    },
+    {
+      "start": 2,
+      "end": 2,
+      "time": 1793135257.498985,
+      "ep": 132,
+      "cable": 0,
+      "command": 0,
+      "data": "00",
+      "wire": "f000320108000000007f01f7",
+      "length": 12
+    },
+    {
+      "start": 3,
+      "end": 3,
+      "time": 1793135257.605569,
+      "ep": 4,
+      "cable": 0,
+      "command": 34,
+      "data": "051c010000010000e4",
+      "wire": "f000320949000040021c02000010000000647103f7",
+      "length": 21,
+      "region": 5,
+      "address": 284,
+      "count": 1,
+      "value": "e4"
+    },
+    {
+      "start": 4,
+      "end": 4,
+      "time": 1793135257.605982,
+      "ep": 132,
+      "cable": 0,
+      "command": 0,
+      "data": "00",
+      "wire": "f000320108000000007f01f7",
+      "length": 12
+    },
+    {
+      "start": 5,
+      "end": 5,
+      "time": 1793135257.714693,
+      "ep": 4,
+      "cable": 0,
+      "command": 34,
+      "data": "051d01000001000037",
+      "wire": "f000320949000040021d02000010000000374802f7",
+      "length": 21,
+      "region": 5,
+      "address": 285,
+      "count": 1,
+      "value": "37"
+    },
+    {
+      "start": 6,
+      "end": 6,
+      "time": 1793135257.715692,
+      "ep": 132,
+      "cable": 0,
+      "command": 0,
+      "data": "00",
+      "wire": "f000320108000000007f01f7",
+      "length": 12
+    }
+  ]
+}

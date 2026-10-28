@@ -1,41 +1,60 @@
-MeetStep 0.2.0 — Standalone + VST3 editor (Windows x64)
+MeetStep 0.2.4 - Simple standalone sequencer (Windows x64)
 
-1. Close Ableton Live.
-2. Extract this archive. Keep the complete MeetStep.vst3 folder intact.
-3. Copy MeetStep.vst3 to C:\Program Files\Common Files\VST3\
-   (Windows may ask for administrator permission.)
-4. Open Live. In Preferences > Plug-Ins enable VST3 system folders,
-   then rescan. Insert MeetStep on a MIDI track.
-5. To edit using SMK 37 Pro, select its MIDI input with All Channels,
-   and arm the track or set Monitor to In.
+Extract the archive and run MeetStep Standalone.exe.
+No VST3 or Python installation is needed. This application sends MIDI, not audio.
 
-This build tests the editor only: six patterns, 16 steps, mouse editing,
-SMK pad mapping and saving with the Live project. It does not yet generate
-MIDI or sound. Do not expect Drum Rack playback in this build.
+Settings
+--------
+1. Close MidiSuite and other applications using the SMK MIDI ports.
+2. In MidiSuite, use preset 1 (index 0), then close MidiSuite.
+3. Open Settings and check the SMK MIDI input used for keyboard and pads.
+4. Sequencer MIDI output (DAW): choose a virtual MIDI port routed to your DAW.
+5. Pad colour MIDI output (SMK): choose the SMK-37 Pro Midi port that worked
+   in the colour tester. It must differ from the sequencer output.
+6. SMK MIDI input for colour replies: choose the matching SMK input. A matching
+   port name is selected automatically. If this input is checked above, the app
+   shares the existing connection instead of opening the device twice.
+7. Apply, then Close. Select devices again after restarting the application.
 
-Notes outside MIDI channel 10 select a drum. Bank-1 pads on channel 10
-edit steps. Left mouse button draws; right button erases; drag edits a row.
-Clear pattern / Clear all erase immediately. There is no undo yet.
+Set the DAW to external MIDI Clock, enable Track/Sync on the virtual input,
+and route MIDI channel 1 to your instrument. Do not route it back to MeetStep.
 
-Standalone 0.2.0
----------------
-Run MeetStep Standalone.exe (no audio driver required).
-Settings: check SMK and any additional MIDI inputs; select one MIDI output.
-Apply activates selections; Close dismisses the window. Stop playback before
-changing settings. Ports must be selected again after restarting the app.
+Editing and colours
+-------------------
+Six patterns, 16 sixteenth-note steps. Keyboard notes outside channel 10 select
+ the drum being edited. Channel-10 bank-1 pads toggle its steps. Mouse left draws,
+right erases; a drag stays on its initial row. Mouse edits do not change the
+keyboard-selected drum. Clear actions are immediate; there is no undo.
 
-For DAW routing on the same Windows PC create a virtual MIDI port (for example
-with loopMIDI). Select that port as MeetStep output and as DAW input.
-In Ableton enable Track and Sync for this input, enable EXT, and route MIDI
-to Drum Rack with Monitor In. Avoid sending this output back into MeetStep.
-Some Windows MIDI drivers cannot share an input: close SMK input in the DAW
-if MeetStep reports that it cannot open it.
+Pads 1-16: green for enabled steps of the keyboard-selected note in the current
+pattern, black for empty steps. Before selecting a note, all 16 are black.
+Pads 17-32: a fixed varied palette, independent of note or pattern selection.
+Only changed colours are resent after the initial 32-pad refresh.
 
-Start resets to step 1; Stop silences notes; Continue resumes.
-Clock is 24 PPQN while playing. The sequence is 16 sixteenth notes, output
-channel 1, velocity 100, gate one step. These are fixed in this first build.
-Audition is off initially. The slash physical key toggles it on Windows
-('/' in English, '.' in Russian). Comma/period physical keys ('б'/'ю')
-page the visible note range. Shortcuts apply when MeetStep has focus.
-Patterns and BPM are saved on normal exit. Settings are not persisted yet.
-SMK LED feedback is not implemented: its external control protocol is unconfirmed.
+Colour packets follow the tester's Maximum algorithm: one RGB+enable block
+per pad, exact ACK after each message, no inserted pauses and no retries.
+If an ACK is missing for 2 seconds, colour sending stops and the main status
+shows an error. Sequencer playback continues. Check the port pair, close other
+port users, then Apply settings to reconnect. No preset switching or Save to
+device command is sent. Already applied colours are not automatically restored.
+The bank-2 physical position/address mapping needs confirmation on your SMK.
+
+Transport
+---------
+Pad 25 = bank 2, bottom row, leftmost pad: MIDI Note 52 on channel 10.
+Pad 25 or Space toggles Play/Stop; playback restarts at step 1 after Stop.
+Pad release does not toggle. Holding Space does not repeatedly toggle.
+Space applies in the sequencer, including when its buttons have focus; it does
+not control transport while editing a text field or using the Settings dialog.
+Start resets position; Stop sends Note Off; Continue retains the current tick.
+
+MIDI Clock: 24 PPQN while playing. Output channel 1, velocity 100, gate one step.
+Audition is off initially; slash toggles it. Comma/period page the visible notes.
+Patterns and BPM save on normal exit. Devices are not persisted.
+
+Validation
+----------
+GitHub Actions runs captured-byte/oracle tests, core mapping/golden tests and
+the actual standalone's --self-test for transport and the ACK worker. Reports
+are published separately from the Windows application artifact. These tests
+do not establish physical LED colour or DAW timing; check those on your hardware.

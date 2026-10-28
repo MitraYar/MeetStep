@@ -2,3 +2,4 @@
 /meetstep-editor.png
 
 /tools/__pycache__/
+/tests/**/__pycache__/

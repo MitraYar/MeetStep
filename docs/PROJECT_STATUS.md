@@ -1,5 +1,28 @@
 # MeetStep handoff / current project status
 
+## Simple standalone 0.2.4
+
+This slice keeps the 0.2.0 sequencer core and adds a separate SMK colour output
+and reply input in Settings. Pads 1–16 show occupied/empty steps of the
+keyboard-selected drum (editor green/black); pads 17–32 have a fixed varied
+palette. Physical pad 25 is channel-10 Note 52 and toggles Play/Stop, as does
+Space. Start resets position; Continue remains separate. No velocity engine
+or other larger specification features are added.
+
+LED exchange follows the frozen Python tester's Maximum mode (one RGB+enable
+block, mandatory ACK, no added pause/retry). A timeout stops colour updates
+without stopping the music. Shared input is opened once. Preset index 0 is
+required; bank-2 physical LED mapping and JUCE delivery need hardware checks.
+Source provenance and captured fixtures are in tests/reference/README.md.
+The run IDs supplied by the user cannot yet be mapped to commits because the
+environment blocks GitHub Actions API access. Do not claim that mapping.
+
+Windows Actions now runs the frozen-oracle tests and three CTest suites,
+including the standalone's transport and LED-worker checks; reports are
+uploaded separately. Check actual run results before claiming they passed.
+The older LED investigation notes below describe historical work, not this
+slice's transport. The original tools remain unchanged.
+
 This file is the entry point for resuming work in a new Codex task.
 Use the existing checkout; do not create a worktree for routine tasks.
 
