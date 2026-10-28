@@ -5,7 +5,7 @@ import time
 
 import mido
 
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 SPEED_MODES = {'fast': (False, 0.0), 'maximum': (True, 0.0), 'balanced': (False, 0.005)}
 ACK = bytes.fromhex('f0 00 32 01 08 00 00 00 00 7f 01 f7')
 

@@ -112,5 +112,37 @@ class GuiTests(unittest.TestCase):
             if app.worker is not None:app.worker.join(timeout=3)
             root.after_cancel(app.poll_id);root.destroy()
 
+    def test_scroll_and_fixed_send_panel_fit_1600x900_with_taskbar(self):
+        for scaling in (1.33, 2.0):
+            root=tk.Tk()
+            root.tk.call('tk','scaling',scaling)
+            with patch('smk_pad_colour_gui.work_area',return_value=(0,0,1600,852)):
+                app=App(root,Backend())
+            try:
+                root.update()
+                self.assertLessEqual(root.winfo_height(),772)
+                self.assertLessEqual(root.winfo_y()+root.winfo_height()+40,852)
+                self.assertTrue(app.send_button.winfo_ismapped())
+                footer_y=app.send_button.winfo_rooty()-root.winfo_rooty()
+                self.assertGreaterEqual(footer_y,0)
+                self.assertLess(footer_y+app.send_button.winfo_height(),root.winfo_height())
+                self.assertLess(app.canvas.winfo_height(),app.body.winfo_reqheight())
+                original=app.canvas.yview()
+                # Wheel over a brightness slider scrolls, without modifying it.
+                brightness=app.brightness.get()
+                app.brightness_slider.event_generate('<MouseWheel>',delta=-120)
+                root.update()
+                self.assertGreater(app.canvas.yview()[0],original[0])
+                self.assertEqual(app.brightness.get(),brightness)
+                app.canvas.yview_moveto(1)
+                root.update()
+                self.assertGreater(app.canvas.yview()[0],0)
+                self.assertAlmostEqual(app.canvas.yview()[1],1,places=2)
+                self.assertEqual(app.send_button.winfo_rooty()-root.winfo_rooty(),footer_y)
+                app.scroll_page(-1);root.update()
+                self.assertLess(app.canvas.yview()[1],1)
+            finally:
+                root.after_cancel(app.poll_id);root.destroy()
+
 
 if __name__ == '__main__': unittest.main()

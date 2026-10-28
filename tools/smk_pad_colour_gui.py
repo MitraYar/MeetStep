@@ -11,6 +11,41 @@ import mido
 from smk_pad_colour import VERSION, send_colour
 
 
+def work_area(root):
+    """Return the nearest Windows monitor's usable rectangle, excluding taskbar."""
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            from ctypes import wintypes
+            class MonitorInfo(ctypes.Structure):
+                _fields_ = [('size', wintypes.DWORD), ('monitor', wintypes.RECT),
+                            ('work', wintypes.RECT), ('flags', wintypes.DWORD)]
+            user32 = ctypes.WinDLL('user32', use_last_error=True)
+            user32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
+            user32.MonitorFromWindow.restype = wintypes.HANDLE
+            user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MonitorInfo)]
+            user32.GetMonitorInfoW.restype = wintypes.BOOL
+            root.update_idletasks()
+            monitor = user32.MonitorFromWindow(root.winfo_id(), 2)
+            info = MonitorInfo()
+            info.size = ctypes.sizeof(info)
+            if user32.GetMonitorInfoW(monitor, ctypes.byref(info)):
+                r = info.work
+                return r.left, r.top, r.right, r.bottom
+        except (AttributeError, OSError):
+            pass
+    return 0, 0, root.winfo_screenwidth(), max(200, root.winfo_screenheight()-80)
+
+
+def fit_window(root):
+    left, top, right, bottom = work_area(root)
+    # Reserve additional space for native title bar, borders and a small margin.
+    width = min(880, max(300, right-left-40))
+    height = min(760, max(200, bottom-top-80))
+    root.minsize(min(680, width), min(360, height))
+    root.geometry(f'{width}x{height}{left+20:+d}{top+20:+d}')
+
+
 class App:
     def __init__(self, root, backend=None, enumerate_ports=True):
         self.root = root
@@ -21,9 +56,21 @@ class App:
         self.closing = False
         self.controls = []
         root.title(f'MeetStep — цвет пэдов {VERSION}')
-        root.minsize(720, 680)
-        body = ttk.Frame(root, padding=12)
-        body.pack(fill='both', expand=True)
+        fit_window(root)
+        self.footer = ttk.Frame(root, padding=(12, 6))
+        self.footer.pack(side='bottom', fill='x')
+        viewport = ttk.Frame(root)
+        viewport.pack(fill='both', expand=True)
+        self.canvas = tk.Canvas(viewport, highlightthickness=0, yscrollincrement=24)
+        self.scrollbar = ttk.Scrollbar(viewport, orient='vertical', command=self.canvas.yview)
+        self.scrollbar.pack(side='right', fill='y')
+        self.canvas.pack(side='left', fill='both', expand=True)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        body = ttk.Frame(self.canvas, padding=12)
+        self.body = body
+        self.body_window = self.canvas.create_window((0, 0), window=body, anchor='nw')
+        body.bind('<Configure>', lambda _: self.canvas.configure(scrollregion=self.canvas.bbox('all')))
+        self.canvas.bind('<Configure>', lambda event: self.canvas.itemconfigure(self.body_window, width=event.width))
         ttk.Label(body, text='Перед тестом выберите пресет 1 в MidiSuite, затем закройте MidiSuite.').pack(anchor='w')
         ttk.Label(body, text='Цвет отправляется только кнопкой «Отправить цвет».').pack(anchor='w', pady=(0, 8))
         self.input = self.port_box(body, 'MIDI-вход — ответы контроллера')
@@ -94,7 +141,7 @@ class App:
             button.pack(anchor='w')
             self.speed_buttons[value] = button
             self.controls.append(button)
-        actions = ttk.Frame(body)
+        actions = ttk.Frame(self.footer)
         actions.pack(fill='x', pady=8)
         self.send_button = ttk.Button(actions, text='Отправить цвет и яркость', command=self.begin)
         self.send_button.pack(side='left', padx=3)
@@ -103,15 +150,48 @@ class App:
         self.stop_button.pack(side='left', padx=3)
         ttk.Button(actions, text='Копировать лог', command=self.copy_log).pack(side='right')
         self.status = tk.StringVar(root, value='Выберите MIDI-вход и выход.')
-        ttk.Label(body, textvariable=self.status, wraplength=680).pack(anchor='w')
+        ttk.Label(self.footer, textvariable=self.status, wraplength=650).pack(anchor='w')
         self.log = tk.Text(body, height=6, width=85, state='disabled')
         self.log.pack(fill='both', expand=True, pady=6)
+        self.install_scroll_bindings(body)
+        root.bind('<Next>', lambda _: self.scroll_page(1))
+        root.bind('<Prior>', lambda _: self.scroll_page(-1))
         self.preview_colour()
         self.append_log(f'Pad Colour {VERSION}; основа MIDI: рабочий pad-one 2770a7a.')
         if enumerate_ports:
             self.refresh()
         root.protocol('WM_DELETE_WINDOW', self.close)
         self.poll_id = root.after(40, self.poll)
+
+    def scroll_page(self, direction):
+        self.canvas.yview_scroll(direction, 'pages')
+        return 'break'
+
+    def install_scroll_bindings(self, widget):
+        # Bind at widget level, before Scale/Combobox defaults can change values.
+        # The log keeps its own native scrolling.
+        if isinstance(widget, tk.Text):
+            return
+        widget.bind('<MouseWheel>', self.mouse_wheel)
+        widget.bind('<Button-4>', lambda _: self.scroll_units(-3))
+        widget.bind('<Button-5>', lambda _: self.scroll_units(3))
+        for child in widget.winfo_children():
+            self.install_scroll_bindings(child)
+        self.canvas.bind('<MouseWheel>', self.mouse_wheel)
+        self.canvas.bind('<Button-4>', lambda _: self.scroll_units(-3))
+        self.canvas.bind('<Button-5>', lambda _: self.scroll_units(3))
+
+    def scroll_units(self, units):
+        self.canvas.yview_scroll(units, 'units')
+        return 'break'
+
+    def mouse_wheel(self, event):
+        if event.delta:
+            units = -int(event.delta / 120)
+            if units == 0:
+                units = -1 if event.delta > 0 else 1
+            return self.scroll_units(units * 3)
+        return 'break'
 
     def port_box(self, parent, label):
         ttk.Label(parent, text=label).pack(anchor='w')

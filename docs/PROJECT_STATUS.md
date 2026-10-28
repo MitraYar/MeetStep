@@ -146,3 +146,17 @@ Elapsed exchange time is measured from first send to last matching ACK arrival;
 port lifecycle and deferred trace rendering are excluded. Failed/stopped runs
 are labelled incomplete with sent/ACK counts. GUI reports completed counts/time.
 Hardware throughput and visible LED update timing still require user testing.
+
+### Window fit, 0.3.1, and future MVP source
+
+User reports 1600×900 Windows 11 display with a bottom taskbar. The LED tester
+now uses the monitor work area for initial sizing, a vertically scrollable
+settings canvas and a fixed Send/Stop/status footer. Test at normal/enlarged
+Tk scaling, including wheel and Page Up/Page Down navigation.
+
+The user supplied `docs/spec/SMK37_Sequencer_SPEC_v0.5_regenerated.md` as the
+basis of a future MVP after LED investigation. Preserve this attachment
+verbatim; it is requirements context for that future task, not authorization
+to begin MVP development during the LED window fix. The document contains
+CONFIRMED decisions as well as OPEN/PROPOSED items; read the full decision
+logs when that task begins. Source file supplied on 2026-10-28.

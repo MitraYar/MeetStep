@@ -54,6 +54,6 @@ jobs:
           Get-FileHash package/MeetStep-SMK-Pad-Colour.exe -Algorithm SHA256
       - uses: actions/upload-artifact@v4
         with:
-          name: MeetStep-SMK-Pad-Colour-0.3.0-Windows-x64
+          name: MeetStep-SMK-Pad-Colour-0.3.1-Windows-x64
           path: package/
           if-no-files-found: error
