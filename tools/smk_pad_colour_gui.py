@@ -83,6 +83,17 @@ class App:
         chooser = ttk.Button(colours, text='Палитра…', command=self.choose_colour)
         chooser.pack(side='left', padx=2)
         self.controls.append(chooser)
+        self.speed = tk.StringVar(root, value='fast')
+        speeds = ttk.LabelFrame(body, text='Скорость — каждый пакет подтверждается ACK', padding=4)
+        speeds.pack(fill='x', pady=4)
+        self.speed_buttons = {}
+        for value, title in [('maximum', 'Максимум: RGB + яркость одним пакетом, без пауз (эксперимент)'),
+                             ('fast', 'Быстро: отдельные записи, без пауз'),
+                             ('balanced', 'Щадящий: отдельные записи, пауза 5 мс')]:
+            button = ttk.Radiobutton(speeds, text=title, variable=self.speed, value=value)
+            button.pack(anchor='w')
+            self.speed_buttons[value] = button
+            self.controls.append(button)
         actions = ttk.Frame(body)
         actions.pack(fill='x', pady=8)
         self.send_button = ttk.Button(actions, text='Отправить цвет и яркость', command=self.begin)
@@ -180,9 +191,9 @@ class App:
         if not hasattr(self, 'mode_label'):
             return
         value = self.brightness.get()
-        text = (f'Нечётные: 255; чётные: {value}% = {round(255*value/100)}. Один проход ~13 секунд.'
+        text = (f'Нечётные: 255; чётные: {value}% = {round(255*value/100)}.'
                 if self.alternate.get() else
-                f'Все 32 пэда: яркость {value}. Один проход ~13 секунд.' if self.all_pads.get()
+                f'Все 32 пэда: яркость {value}.' if self.all_pads.get()
                 else f'Выбранный пэд: яркость {value}.')
         self.mode_label.configure(text=text)
 
@@ -195,21 +206,20 @@ class App:
         args = self.input.get(), self.output.get(), self.pad.get(), tuple(v.get() for v in self.rgb)
         options = dict(brightness=None if self.alternate.get() else self.brightness.get(),
                        all_pads=self.all_pads.get(), alternate=self.alternate.get(),
-                       alternate_percent=self.brightness.get() if self.alternate.get() else 80)
-        self.expected_acks = 128 if options['all_pads'] else 4
+                       alternate_percent=self.brightness.get() if self.alternate.get() else 80, speed=self.speed.get())
+        self.expected_acks = (32 if options['all_pads'] else 1) * (1 if options['speed']=='maximum' else 4)
         self.cancel.clear()
         self.set_busy(True)
         self.status.set('Отправка на все 32 пэда…' if options['all_pads'] else f'Отправка на пэд {args[2]}…')
 
         def work():
-            success = False
+            result = None
             try:
-                send_colour(*args, self.cancel, lambda line: self.events.put(('log', line)), backend=self.backend, **options)
-                success = True
+                result = send_colour(*args, self.cancel, lambda line: self.events.put(('log', line)), backend=self.backend, **options)
             except Exception as error:
                 self.events.put(('log', f'{type(error).__name__}: {error}'))
             finally:
-                self.events.put(('done', success))
+                self.events.put(('done', result))
 
         self.worker = threading.Thread(target=work, daemon=True)
         self.worker.start()
@@ -224,7 +234,7 @@ class App:
                     self.worker.join()
                     self.worker = None
                     self.set_busy(False)
-                    self.status.set(f'{self.expected_acks} ACK получены — проверьте пэды.' if value else 'Отправка остановлена. Подробности в логе.')
+                    self.status.set(f'{value["acknowledged"]}/{value["planned"]} ACK · {value["elapsed_ms"]:.2f} мс — проверьте пэды.' if value else 'Отправка остановлена. Подробности в логе.')
         except queue.Empty:
             pass
         if self.closing and self.worker is None:
@@ -249,6 +259,8 @@ def run():
         root.update()
         assert app.pad.get() == 32 and tuple(v.get() for v in app.rgb) == (255, 0, 127)
         assert len(app.pad_buttons) == 32
+        app.speed_buttons['maximum'].invoke()
+        assert app.speed.get() == 'maximum'
         app.backend.load()
         apis = rtmidi.get_compiled_api()
         if sys.platform == 'win32':

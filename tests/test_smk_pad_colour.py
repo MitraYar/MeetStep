@@ -90,10 +90,12 @@ class ColourTests(unittest.TestCase):
         self.assertEqual(len(self.sent), 1)
 
     def test_cancel_after_first_ack_stops_remaining_writes(self):
-        def log(line):
-            if line.startswith('RX ACK:'): self.cancel.set()
-        send = lambda: send_colour('SMK IN', 'SMK OUT', 1, (1,2,3), self.cancel, log, spacing=.01)
-        with self.assertRaises(InterruptedError): send()
+        original = self.output.send_message.side_effect
+        def send(wire):
+            original(wire)
+            self.cancel.set()
+        self.output.send_message.side_effect = send
+        with self.assertRaises(InterruptedError): self.send()
         self.assertEqual(len(self.sent), 1)
         self.input.close_port.assert_called_once()
 
@@ -161,6 +163,55 @@ class ColourTests(unittest.TestCase):
         self.output.open_port.assert_called_once_with(0)
         self.input.close_port.assert_called_once()
         self.output.close_port.assert_called_once()
+
+    def test_speed_modes_packet_counts_values_and_waits(self):
+        for mode, count, pause in [('maximum',32,0),('fast',128,0),('balanced',128,.005)]:
+            self.sent.clear()
+            with patch.object(self.cancel,'wait',return_value=False) as wait:
+                result=send_colour('SMK IN','SMK OUT',1,(1,127,255),self.cancel,self.logs.append,
+                                   all_pads=True,alternate=True,alternate_percent=80,speed=mode)
+            self.assertEqual(len(self.sent),count)
+            self.assertEqual(result['acknowledged'],count)
+            self.assertTrue(result['success'])
+            self.assertEqual(wait.call_count,127 if pause else 0)
+            if pause: wait.assert_called_with(pause)
+            for pad in range(32):
+                if mode=='maximum':
+                    command,data=decode(self.sent[pad])
+                    self.assertEqual(command,0x22)
+                    self.assertEqual(data[0],5)
+                    self.assertEqual(int.from_bytes(data[1:5],'little'),0x11b+pad*74)
+                    self.assertEqual(data[5:8],bytes([4,0,0]))
+                    self.assertEqual(list(data[8:]),[1,127,255,204 if pad%2 else 255])
+
+    def test_packed_matches_captured_block_format(self):
+        from smk_pad_colour import block_packet
+        capture=json.loads((ROOT/'docs/protocol/smk-captured-block-write.json').read_text())
+        message=block_packet(capture['address'],bytes.fromhex(capture['value']))
+        self.assertEqual(bytes(message.bytes()).hex(),capture['wire'])
+
+    def test_exchange_timing_excludes_port_open_and_close(self):
+        clock=[0.0]
+        def add(seconds):clock[0]+=seconds
+        self.input.open_port.side_effect=lambda _:add(1)
+        self.output.open_port.side_effect=lambda _:add(2)
+        original=self.output.send_message.side_effect
+        def send(wire):add(.002);original(wire)
+        self.output.send_message.side_effect=send
+        self.output.close_port.side_effect=lambda:add(10)
+        with patch('smk_pad_colour.time.monotonic',side_effect=lambda:clock[0]):
+            result=send_colour('SMK IN','SMK OUT',1,(1,2,3),self.cancel,self.logs.append,
+                               brightness=255,all_pads=True,speed='maximum')
+        self.assertAlmostEqual(result['elapsed_ms'],64)
+        self.assertAlmostEqual(result['ack_mean_ms'],2)
+
+    def test_packed_timeout_stops_without_fallback(self):
+        self.reply=None
+        with self.assertRaises(TimeoutError):
+            send_colour('SMK IN','SMK OUT',1,(1,2,3),self.cancel,self.logs.append,
+                        all_pads=True,speed='maximum',timeout=.03)
+        self.assertEqual(len(self.sent),1)
+        self.assertTrue(any('ПРЕРВАНО' in line and 'ACK 0/32' in line for line in self.logs))
 
     def test_pre_cancelled_operation_does_not_open_ports(self):
         self.cancel.set()

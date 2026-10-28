@@ -132,3 +132,17 @@ ports per batch, ACK per byte, 100 ms spacing and stop on first error.
 128 messages take about 13 seconds. No Save. Hardware acceptance of the new
 brightness/batch behaviour remains to be checked; bank-2 physical order is
 still provisional.
+
+### Speed experiment, 0.3.0
+
+Radio modes: fast (single-byte writes, zero gap, default), maximum
+(experimental contiguous RGB+brightness write per pad, zero gap), balanced
+(single-byte writes, 5 ms gap). ACK remains mandatory in every mode. Maximum
+uses 32 packets for all pads instead of 128. Four-byte acceptance on the device
+is still unverified; generic block encoding is checked against a real captured
+1024-byte write. The original pad-one baseline remains unchanged.
+
+Elapsed exchange time is measured from first send to last matching ACK arrival;
+port lifecycle and deferred trace rendering are excluded. Failed/stopped runs
+are labelled incomplete with sent/ACK counts. GUI reports completed counts/time.
+Hardware throughput and visible LED update timing still require user testing.
