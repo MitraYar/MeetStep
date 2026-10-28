@@ -12,7 +12,7 @@ public:
  Main(){
   addAndMakeVisible(panel);
   for(auto* b:{&start,&stop,&resume,&settings,&audition}) addAndMakeVisible(*b);
-  addAndMakeVisible(tempo);addAndMakeVisible(status);tempo.setRange(30,300,1);tempo.setValue(120);tempo.setTextBoxStyle(juce::Slider::TextBoxLeft,false,60,24);
+  addAndMakeVisible(tempo);addAndMakeVisible(status);tempo.setRange(30,240,1);tempo.setValue(120);tempo.setTextBoxStyle(juce::Slider::TextBoxLeft,false,60,24);
   tempo.onValueChange=[this]{bpm.store(tempo.getValue());};
   start.onClick=[this]{transport(true,false);};stop.onClick=[this]{transport(false,false);};resume.onClick=[this]{transport(true,true);};
   audition.onClick=[this]{preview=!preview.load();audition.setButtonText(preview?"Audition: On":"Audition: Off");};settings.onClick=[this]{openSettings();};
@@ -20,7 +20,12 @@ public:
  }
  ~Main() override {save();stopTimer();for(auto& input:inputs) input->stop();transport(false,false);}
  void resized() override {panel.setBounds(0,90,getWidth(),getHeight()-90);start.setBounds(16,12,70,30);stop.setBounds(92,12,70,30);resume.setBounds(168,12,90,30);settings.setBounds(264,12,90,30);audition.setBounds(360,12,130,30);tempo.setBounds(510,12,230,30);status.setBounds(16,48,getWidth()-32,30);}
+ bool keyStateChanged(bool) override {
+  if(!juce::KeyPress::isKeyCurrentlyDown(juce::KeyPress::spaceKey)) spaceHeld=false;
+  return false;
+ }
  bool keyPressed(const juce::KeyPress& k) override {
+  if(k.getKeyCode()==juce::KeyPress::spaceKey){if(!spaceHeld){spaceHeld=true;togglePlayback();}return true;}
   auto c=k.getTextCharacter();
   bool slash=c=='/';
 #if JUCE_WINDOWS
@@ -34,12 +39,17 @@ public:
  void page(int d){auto& g=panel.getGrid();g.baseNote=juce::jlimit(0,112,g.baseNote+d);g.repaint();}
 private:
  juce::CriticalSection lock;std::vector<std::unique_ptr<juce::MidiInput>> inputs;std::unique_ptr<juce::MidiOutput> output;
- std::atomic<bool> preview{false};std::atomic<double>bpm{120};bool running=false;int tick=0;double next=0;std::bitset<128> sounding,live;
+ std::atomic<bool> preview{false};std::atomic<double>bpm{120};bool spaceHeld=false;bool running=false;int tick=0;double next=0;std::bitset<128> sounding,live;
  void send(const juce::MidiMessage& m){if(output)output->sendMessageNow(m);}
  void silence(){for(int n=0;n<128;++n)if(sounding[n]||live[n])send(juce::MidiMessage::noteOff(1,n));sounding.reset();live.reset();}
  void transport(bool play,bool cont){const juce::ScopedLock guard(lock);silence();running=play;if(!play)panel.getGrid().playingStep=-1;if(play&&!cont)tick=0;next=juce::Time::getMillisecondCounterHiRes();send(play?(cont?juce::MidiMessage::midiContinue():juce::MidiMessage::midiStart()):juce::MidiMessage::midiStop());}
+ void togglePlayback(){const juce::ScopedLock guard(lock);transport(!running,true);}
  void handleIncomingMidiMessage(juce::MidiInput*,const juce::MidiMessage& m) override {
   const juce::ScopedLock guard(lock);
+  if((m.getChannel()==10||m.getChannel()==11)&&m.getNoteNumber()==63&&(m.isNoteOn()||m.isNoteOff())){
+   if(m.isNoteOn()) togglePlayback();
+   return;
+  }
   if(m.isNoteOn()){
    model.noteOn(m.getChannel(),m.getNoteNumber(),m.getVelocity());
    if(m.getChannel()!=10){
@@ -87,7 +97,7 @@ private:
 };
 class App : public juce::JUCEApplication {
 public:
- const juce::String getApplicationName() override{return "MeetStep";}const juce::String getApplicationVersion() override{return "0.2.0";}
+ const juce::String getApplicationName() override{return "MeetStep";}const juce::String getApplicationVersion() override{return "0.2.1";}
  class Window:public juce::DocumentWindow{public:Window():DocumentWindow("MeetStep Standalone",juce::Colours::black,allButtons){setUsingNativeTitleBar(true);setContentOwned(new Main,true);centreWithSize(960,760);setVisible(true);}void closeButtonPressed() override{juce::JUCEApplication::getInstance()->systemRequestedQuit();}};
  std::unique_ptr<Window> window;void initialise(const juce::String&)override{window=std::make_unique<Window>();}void shutdown()override{window.reset();}
 };

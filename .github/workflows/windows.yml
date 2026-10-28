@@ -34,10 +34,10 @@ jobs:
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item "build/MeetStepApp_artefacts/Release/MeetStep Standalone.exe" package/
           Copy-Item packaging/INSTALL-WINDOWS.txt package/
-          Compress-Archive -Path package/* -DestinationPath MeetStep-0.2.0-Windows-x64.zip
-          Get-FileHash MeetStep-0.2.0-Windows-x64.zip -Algorithm SHA256 | Format-List
+          Compress-Archive -Path package/* -DestinationPath MeetStep-0.2.1-Windows-x64.zip
+          Get-FileHash MeetStep-0.2.1-Windows-x64.zip -Algorithm SHA256 | Format-List
       - uses: actions/upload-artifact@v4
         with:
-          name: MeetStep-0.2.0-Windows-x64
-          path: MeetStep-0.2.0-Windows-x64.zip
+          name: MeetStep-0.2.1-Windows-x64
+          path: MeetStep-0.2.1-Windows-x64.zip
           if-no-files-found: error

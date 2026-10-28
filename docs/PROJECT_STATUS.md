@@ -2,6 +2,20 @@
 
 This file is the entry point for resuming work in a new Codex task.
 
+**Latest decision: LED utilities are FROZEN by user instruction.** Technical
+feasibility is established; no further utility features or releases. Sequencer
+builds are now authorized. Target maximum feasible coverage of the supplied
+specification over subsequent builds, keeping unresolved semantics explicit.
+
+Standalone 0.2.1 is an incremental transport build, not the completed spec MVP:
+Space (autorepeat suppressed) and Bank2 note 63 on CH10/11 toggle Play/Pause.
+It retains the existing MIDI Stop/Continue behavior and next-clock-tick resume;
+clock halts while paused. Start still resets position. BPM is limited to 30–240.
+Hardware/DAW validation of these controls is pending. Next milestones are the
+64-step/16-pattern multichannel core, safe editing and persistence, then formula
+editing and configurable PC bindings. Existing 0.2.0 limitations below still
+apply until those milestones are implemented.
+
 **2026-10-28: LED transport rollback.** Only commit `2770a7a` (Build bounded
 Windows SMK pad-one LED diagnostic) is accepted as the MIDI/SysEx baseline.
 The later LED implementations at 5b53c6e, d373abe, ec35bf8 and 0feb67f
