@@ -36,6 +36,7 @@ public:
         if(!cells().contains(e.getPosition())) return;
         if(!e.mods.isLeftButtonDown() && !e.mods.isRightButtonDown()) return;
         const int row=(e.y-cells().getY())*16/cells().getHeight();
+        model.selectNote(baseNote+15-row);
         stroke.begin(baseNote+15-row,stepAt(e.x),!e.mods.isRightButtonDown());
         repaint();
     }

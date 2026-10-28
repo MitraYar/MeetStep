@@ -192,3 +192,27 @@ resume/DAW-clock semantics remain open. QWERTY editing duplicates, number-row
 formula commands and an Options → Key mappings tab are recorded for builds
 after the current MVP. No sequencer or shortcut implementation is included in
 this documentation update.
+
+### Standalone 0.2.2 — LED feedback integration
+
+Frozen utility files are unchanged. Sequencer Settings now has an independent
+LED feedback device and ACK input selector; select the SMK output and its input.
+An input already enabled for musical control is shared for ACK reception.
+Use a separate DAW output for sequence notes; identical sequence/LED output
+selection is rejected to avoid opening a Windows device twice.
+
+Bank1's 16 pads show the selected pitch in the current pattern. Mouse editing
+also selects that pitch. Empty=RGB 0/0/0 with enable 0; velocity 127=190/220/255;
+intermediate values linearly scale RGB, with enable 255. Bank2 commands are
+untouched. Pad hits store their velocity when enabling a step; mouse-created
+steps default to 100. Playback and project persistence retain these values;
+old bitmask projects load at velocity 100.
+
+A dedicated worker sends contiguous RGB+enable writes with no added gap and
+one outstanding ACK. Updates coalesce to latest state, unchanged pads are not
+resent. A two-second ACK timeout stops feedback visibly until Settings Apply;
+no automatic retries or persistent Save commands. Device selections currently
+must be reapplied after restart. The packaged --led-self-test compares a packet
+against the frozen Python utility and checks gradient endpoints/midpoint.
+Hardware validation remains pending for the JUCE backend (encoding is reused,
+not the Python MIDI library). Current scope remains 16 steps / six patterns.

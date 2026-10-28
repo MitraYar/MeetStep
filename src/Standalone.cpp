@@ -1,10 +1,11 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 #include "Editor.h"
+#include "LedFeedback.h"
 #include <bitset>
 #if JUCE_WINDOWS
 #include <windows.h>
 #endif
-class Main : public juce::Component, private juce::MidiInputCallback, private juce::HighResolutionTimer {
+class Main : public juce::Component, private juce::MidiInputCallback, private juce::HighResolutionTimer, private juce::Timer {
 public:
  meetstep::Pattern model; meetstep::Panel panel{model};
  juce::TextButton start{"Start"},stop{"Stop"},resume{"Continue"},settings{"Settings"},audition{"Audition: Off"};
@@ -16,9 +17,9 @@ public:
   tempo.onValueChange=[this]{bpm.store(tempo.getValue());};
   start.onClick=[this]{transport(true,false);};stop.onClick=[this]{transport(false,false);};resume.onClick=[this]{transport(true,true);};
   audition.onClick=[this]{preview=!preview.load();audition.setButtonText(preview?"Audition: On":"Audition: Off");};settings.onClick=[this]{openSettings();};
-  setWantsKeyboardFocus(true);setSize(960,760);restore();startTimer(1);
+  setWantsKeyboardFocus(true);setSize(960,760);restore();juce::HighResolutionTimer::startTimer(1);juce::Timer::startTimerHz(30);
  }
- ~Main() override {save();stopTimer();for(auto& input:inputs) input->stop();transport(false,false);}
+ ~Main() override {save();juce::Timer::stopTimer();leds.close();juce::HighResolutionTimer::stopTimer();for(auto& input:inputs) input->stop();transport(false,false);}
  void resized() override {panel.setBounds(0,90,getWidth(),getHeight()-90);start.setBounds(16,12,70,30);stop.setBounds(92,12,70,30);resume.setBounds(168,12,90,30);settings.setBounds(264,12,90,30);audition.setBounds(360,12,130,30);tempo.setBounds(510,12,230,30);status.setBounds(16,48,getWidth()-32,30);}
  bool keyStateChanged(bool) override {
   if(!juce::KeyPress::isKeyCurrentlyDown(juce::KeyPress::spaceKey)) spaceHeld=false;
@@ -38,14 +39,21 @@ public:
  }
  void page(int d){auto& g=panel.getGrid();g.baseNote=juce::jlimit(0,112,g.baseNote+d);g.repaint();}
 private:
+ meetstep::LedFeedback leds;juce::String ledOutputId,ledInputId;
+ void timerCallback() override {
+  std::array<int,16> values{};for(int i=0;i<16;++i)values[i]=model.velocity(model.currentPattern(),model.selectedNote(),i);
+  leds.update(values);
+  if(leds.hasFailed())status.setText("LED ACK timeout: feedback stopped. Reapply Settings to reconnect.",juce::dontSendNotification);
+ }
  juce::CriticalSection lock;std::vector<std::unique_ptr<juce::MidiInput>> inputs;std::unique_ptr<juce::MidiOutput> output;
  std::atomic<bool> preview{false};std::atomic<double>bpm{120};bool spaceHeld=false;bool running=false;int tick=0;double next=0;std::bitset<128> sounding,live;
  void send(const juce::MidiMessage& m){if(output)output->sendMessageNow(m);}
  void silence(){for(int n=0;n<128;++n)if(sounding[n]||live[n])send(juce::MidiMessage::noteOff(1,n));sounding.reset();live.reset();}
  void transport(bool play,bool cont){const juce::ScopedLock guard(lock);silence();running=play;if(!play)panel.getGrid().playingStep=-1;if(play&&!cont)tick=0;next=juce::Time::getMillisecondCounterHiRes();send(play?(cont?juce::MidiMessage::midiContinue():juce::MidiMessage::midiStart()):juce::MidiMessage::midiStop());}
  void togglePlayback(){const juce::ScopedLock guard(lock);transport(!running,true);}
- void handleIncomingMidiMessage(juce::MidiInput*,const juce::MidiMessage& m) override {
+ void handleIncomingMidiMessage(juce::MidiInput* source,const juce::MidiMessage& m) override {
   const juce::ScopedLock guard(lock);
+  if(m.isSysEx()){if(source&&source->getIdentifier()==ledInputId)leds.receive(m);return;}
   if((m.getChannel()==10||m.getChannel()==11)&&m.getNoteNumber()==63&&(m.isNoteOn()||m.isNoteOff())){
    if(m.isNoteOn()) togglePlayback();
    return;
@@ -65,40 +73,62 @@ private:
   if(now-next>100){silence();next=now;}
   send(juce::MidiMessage::midiClock());
   if(tick%6==0){panel.getGrid().playingStep=(tick/6)%16;for(int n=0;n<128;++n)if(sounding[n])send(juce::MidiMessage::noteOff(1,n));sounding.reset();
-   for(int n=0;n<128;++n)if(model.enabled(n,(tick/6)%16)){send(juce::MidiMessage::noteOn(1,n,(juce::uint8)100));sounding.set(n);}}
+   for(int n=0;n<128;++n)if(model.enabled(n,(tick/6)%16)){send(juce::MidiMessage::noteOn(1,n,(juce::uint8)model.velocity(model.currentPattern(),n,(tick/6)%16)));sounding.set(n);}}
   tick=(tick+1)%96;next+=60000.0/(bpm.load()*24.0);
  }
  juce::File stateFile(){return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory).getChildFile("MeetStep/patterns.xml");}
  void save(){juce::XmlElement root("MeetStep");root.setAttribute("current",model.currentPattern());root.setAttribute("bpm",bpm.load());
-  for(int p=0;p<6;++p)for(int n=0;n<128;++n){int bits=0;for(int s=0;s<16;++s)if(model.enabled(p,n,s))bits|=1<<s;if(bits){auto* r=root.createNewChildElement("row");r->setAttribute("p",p);r->setAttribute("n",n);r->setAttribute("bits",bits);}}
+  for(int p=0;p<6;++p)for(int n=0;n<128;++n){int bits=0;for(int s=0;s<16;++s)if(model.enabled(p,n,s))bits|=1<<s;if(bits){auto* r=root.createNewChildElement("row");r->setAttribute("p",p);r->setAttribute("n",n);r->setAttribute("bits",bits);for(int s=0;s<16;++s)r->setAttribute("v"+juce::String(s),model.velocity(p,n,s));}}
   auto f=stateFile();f.getParentDirectory().createDirectory();root.writeTo(f);}
  void restore(){auto root=juce::XmlDocument::parse(stateFile());if(!root||!root->hasTagName("MeetStep"))return;
   for(auto* r:root->getChildIterator())for(int s=0;s<16;++s)model.setStep(r->getIntAttribute("p",-1),r->getIntAttribute("n",-1),s,(r->getIntAttribute("bits")&(1<<s))!=0);
+  for(auto* r:root->getChildIterator())for(int s=0;s<16;++s)if(r->hasAttribute("v"+juce::String(s)))model.setVelocity(r->getIntAttribute("p",-1),r->getIntAttribute("n",-1),s,r->getIntAttribute("v"+juce::String(s)));
   model.selectPattern(root->getIntAttribute("current"));tempo.setValue(root->getDoubleAttribute("bpm",120));}
  void openSettings(){
   auto ins=juce::MidiInput::getAvailableDevices();auto outs=juce::MidiOutput::getAvailableDevices();
   struct SettingsContent:juce::Component{~SettingsContent() override{deleteAllChildren();}};
-  auto* content=new SettingsContent;content->setSize(520,150+int(ins.size())*28);
+  auto* content=new SettingsContent;content->setSize(520,270+int(ins.size())*28);
   std::vector<juce::ToggleButton*> checks;
   int y=12;for(auto d:ins){auto* b=new juce::ToggleButton(d.name);content->addAndMakeVisible(b);b->setBounds(12,y,490,26);y+=28;checks.push_back(b);for(auto& i:inputs)if(i->getIdentifier()==d.identifier)b->setToggleState(true,juce::dontSendNotification);}
   auto* out=new juce::ComboBox;content->addAndMakeVisible(out);out->setBounds(12,y,490,30);out->addItem("No MIDI output",1);int id=2;for(auto d:outs)out->addItem(d.name,id++);out->setSelectedId(1);if(output)for(int i=0;i<outs.size();++i)if(outs[i].identifier==output->getIdentifier())out->setSelectedId(i+2);
+  y+=40;
+  auto* ledLabel=new juce::Label;content->addAndMakeVisible(ledLabel);ledLabel->setText("LED feedback device / ACK input",juce::dontSendNotification);ledLabel->setBounds(12,y,490,24);y+=26;
+  auto* ledOut=new juce::ComboBox;content->addAndMakeVisible(ledOut);ledOut->setBounds(12,y,490,30);ledOut->addItem("LED feedback disabled",1);id=2;for(auto d:outs)ledOut->addItem(d.name,id++);ledOut->setSelectedId(1);for(int i=0;i<outs.size();++i)if(outs[i].identifier==ledOutputId)ledOut->setSelectedId(i+2);
+  y+=36;auto* ledIn=new juce::ComboBox;content->addAndMakeVisible(ledIn);ledIn->setBounds(12,y,490,30);ledIn->addItem("Select SMK input for LED acknowledgements",1);id=2;for(auto d:ins)ledIn->addItem(d.name,id++);ledIn->setSelectedId(1);for(int i=0;i<ins.size();++i)if(ins[i].identifier==ledInputId)ledIn->setSelectedId(i+2);
   auto* apply=new juce::TextButton("Apply");auto* close=new juce::TextButton("Close");content->addAndMakeVisible(apply);content->addAndMakeVisible(close);apply->setBounds(280,y+44,100,30);close->setBounds(392,y+44,100,30);
   juce::DialogWindow::LaunchOptions options;options.content.setOwned(content);options.dialogTitle="MIDI settings";options.dialogBackgroundColour=juce::Colour(0xff242b36);options.useNativeTitleBar=true;options.resizable=false;
   auto* dialog=options.launchAsync();juce::Component::SafePointer<juce::DialogWindow> window(dialog);
   close->onClick=[window]{if(window)window->exitModalState(0);};
-  apply->onClick=[this,checks,ins,outs,out]{
+  apply->onClick=[this,checks,ins,outs,out,ledOut,ledIn]{
+   leds.close();
    for(auto& i:inputs)i->stop();inputs.clear();transport(false,false);
    juce::String error;
    {const juce::ScopedLock guard(lock);output.reset();if(out->getSelectedId()>1){output=juce::MidiOutput::openDevice(outs[out->getSelectedId()-2].identifier);if(!output)error="Cannot open output. ";}}
    for(int i=0;i<ins.size();++i)if(checks[i]->getToggleState()){auto input=juce::MidiInput::openDevice(ins[i].identifier,this);if(input){input->start();inputs.push_back(std::move(input));}else error+="Cannot open "+ins[i].name+". ";}
+   ledOutputId=ledOut->getSelectedId()>1?outs[ledOut->getSelectedId()-2].identifier:juce::String();
+   ledInputId=ledIn->getSelectedId()>1?ins[ledIn->getSelectedId()-2].identifier:juce::String();
+   bool shared=false;for(auto& input:inputs)if(input->getIdentifier()==ledInputId)shared=true;
+   if(ledOutputId.isNotEmpty()){
+    if(output&&output->getIdentifier()==ledOutputId)error+="Choose a separate sequencer output and LED device. ";
+    else error+=leds.open(ledOutputId,ledInputId,shared);
+   }
    status.setText(error.isNotEmpty()?error:juce::String(inputs.size())+" inputs | "+(output?output->getName():"No output"),juce::dontSendNotification);
   };
  }
 };
 class App : public juce::JUCEApplication {
 public:
- const juce::String getApplicationName() override{return "MeetStep";}const juce::String getApplicationVersion() override{return "0.2.1";}
+ const juce::String getApplicationName() override{return "MeetStep";}const juce::String getApplicationVersion() override{return "0.2.2";}
  class Window:public juce::DocumentWindow{public:Window():DocumentWindow("MeetStep Standalone",juce::Colours::black,allButtons){setUsingNativeTitleBar(true);setContentOwned(new Main,true);centreWithSize(960,760);setVisible(true);}void closeButtonPressed() override{juce::JUCEApplication::getInstance()->systemRequestedQuit();}};
- std::unique_ptr<Window> window;void initialise(const juce::String&)override{window=std::make_unique<Window>();}void shutdown()override{window.reset();}
+ std::unique_ptr<Window> window;void initialise(const juce::String& args)override{
+ if(args.contains("--led-self-test")){
+  const unsigned char expected[]={240,0,50,9,97,0,0,64,2,27,2,0,0,64,0,0,0,62,57,127,127,47,8,247};
+  const auto packet=meetstep::ledPacket(0,127);
+  const bool ok=packet.getRawDataSize()==sizeof(expected)&&std::memcmp(packet.getRawData(),expected,sizeof(expected))==0
+    &&meetstep::ledColour(0)==std::array<int,4>{0,0,0,0}
+    &&meetstep::ledColour(64)==std::array<int,4>{95,110,128,255};
+  setApplicationReturnValue(ok?0:1);quit();return;
+ }
+ window=std::make_unique<Window>();}void shutdown()override{window.reset();}
 };
 START_JUCE_APPLICATION(App)

@@ -3,6 +3,13 @@
 #include <iostream>
 void check(bool ok) { if (!ok) { std::cerr << "FAILED\n"; std::exit(1); } }
 int main() {
+    meetstep::Pattern velocities;
+    velocities.selectNote(36);velocities.noteOn(10,40,127);
+    check(velocities.velocity(0,36,0)==127);
+    velocities.setStep(0,36,0,true);check(velocities.velocity(0,36,0)==127);
+    velocities.setVelocity(0,36,0,64);check(velocities.velocity(0,36,0)==64);
+    velocities.noteOn(10,40,12);check(velocities.velocity(0,36,0)==0);
+    velocities.setVelocity(0,36,0,128);check(velocities.velocity(0,36,0)==0);
     meetstep::Pattern p;
     p.noteOn(10,40,100);
     check(p.selectedNote() == -1);
