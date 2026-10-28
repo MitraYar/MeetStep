@@ -2,6 +2,8 @@
 
 Status: discovery / not implementation-ready. Updated with questionnaire rounds 1–4 decisions on 2026-10-28. Platform: Windows. Language of requirements: Russian.
 
+> Latest additions: section 23 records LED validation and transport/PC keyboard requirements from 2026-10-28. It supersedes conflicting earlier text; proposed pad positions remain proposals.
+
 ## 0. Rules for coding agent
 - Do not implement assumptions marked OPEN or PROPOSED without confirmation.
 - Preserve stock firmware; no Open firmware requirement.
@@ -278,13 +280,13 @@ Conflict: modal lower row cannot simultaneously provide dedicated PREVIEW/APPLY/
 ### Phase 1 — working musical core / MVP
 Goal: rapidly create, hear and switch percussion and bass patterns with no stuck MIDI notes. Do not wait for LED diagnostics or formula design.
 1. MIDI I/O diagnostics: identify stock SMK37 input events, pad banks, MIDI channels, knob/fader CC and routing; verify virtual MIDI ports and MIDI Clock in Ableton Live and MorningDAW. Reserve channels 15–16 for DAW passthrough.
-2. Deterministic engine: 30–240 BPM, 1/16 steps, max 64, 16 patterns, queued switch at current active cycle end; note-on/off and stop/panic; pattern length changes preserve hidden steps; save/load project. MIDI Clock master, DAW slave.
+2. Deterministic engine: 30–240 BPM, 1/16 steps, max 64, 16 patterns, queued switch at current active cycle end; note-on/off, Play/Pause from Space and CH10/CH11 Bank2 (section 23), and separate stop/panic; pattern length changes preserve hidden steps; save/load project. MIDI Clock master, DAW slave.
 3. Fast step workflow: CH10 Bank1 16-step grid and four pages; pitch selection via SMK keyboard, audition toggle; channels 1–9 as independent instruments with multiple pitches, Seq/Keyboard/Both and sequencer-only Mute per pattern; CH12 16-pad pattern selection; basic on-screen status.
 4. Basic edits: Undo/Redo; safe COPY→ next pattern (entire pattern or selected channel), auto-create target and queue it, refuse overwrite and refuse beyond pattern 16; CLEAR selected pitch and current channel (triple same-key gesture), DUP×2 selected pitch (hidden-step write only). Implement CH10 Bank2 only for commands actually needed; use temporary PC shortcuts for any unresolved pad collisions.
 MVP acceptance: enter kick/snare/bass on separate channels, play DAW in sync, vary pattern 1→2 by copying and editing, change length without deleting hidden steps, stop cleanly, reopen saved project and reproduce notes. Check 15–16 passthrough if technically supported by routing setup.
 
 ### Phase 2 — musical expression and hardware polish
-Only after Phase 1 is stable: complete CH10/CH11 Bank2 mappings and modifier precedence; soft takeover with testable behavior; ROTATE and LENGTH knob modifiers; Drone across loop/pattern changes; Legato/Non-legato; CH11 Bank1 per-pitch velocity/gate pages; modal GROOVE / VELOCITY / GATE formulas with next-cycle audible preview, Apply/Cancel and tail rules; Humanize from baseline, Scale Velocity, accents with 1–4 offset; LED feedback only if speed/reliability validated. Add scope-based overwrite/merge with double-tap after safe copy is proven.
+Only after Phase 1 is stable: complete CH10/CH11 Bank2 mappings and modifier precedence; soft takeover with testable behavior; ROTATE and LENGTH knob modifiers; Drone across loop/pattern changes; Legato/Non-legato; CH11 Bank1 per-pitch velocity/gate pages; modal GROOVE / VELOCITY / GATE formulas with next-cycle audible preview, Apply/Cancel and tail rules; Humanize from baseline, Scale Velocity, accents with 1–4 offset; LED feedback only if speed/reliability validated. Add scope-based overwrite/merge with double-tap after safe copy is proven. Add QWERTY and number-row shortcuts as their actions become available, followed by the Options → Key mappings tab (section 23).
 
 ### Explicitly deferred / not in scope
 Quantize, swing, timing shift, invert steps, elaborate ALL NOTES editing, more than 16 patterns, DAW-specific automation, mandatory hardware LED feedback.
@@ -295,3 +297,56 @@ Quantize, swing, timing shift, invert steps, elaborate ALL NOTES editing, more t
 - Keep controller MIDI decoding, editor command state machine, pattern data, clock scheduler and MIDI output routing separate.
 - Use tests for note ownership, transport stop, queued switching, hidden-step duplication, non-overwrite copy, modifier release and modal preview cancellation.
 - Do not silently substitute timing behavior or destructive overwrite semantics when specifications remain OPEN.
+
+
+## 23. LED validation and keyboard controls — 2026-10-28
+These latest user requirements override contradictory earlier transport wording. They do not approve the complete proposed CH10/CH11 layouts or authorize starting the sequencer during LED work.
+
+### Hardware findings [USER-TESTED]
+- The LED tester's Maximum mode is stable in the user's testing: one contiguous four-byte write per pad, no added pauses, ACK still required. This is acceptance of the tested mode, not a measured guarantee that every 32-pad refresh completes within 100 ms.
+- The byte previously called brightness (`0x11E + (record - 1) * 0x4A`) behaves as LED enable: below 50% is off, above 50% is on. The exact transition byte and behavior at exactly 50% are unmeasured. Capture comparisons establish 0/255 endpoints, not proportional dimming.
+- Use 0 for off and 255 for on in the sequencer. Values 204 (80%) and 255 both enable the LED; they must not be presented as two tested brightness levels. RGB scaling, if desired later, requires a separate visual test.
+
+### Transport [CONFIRMED requirement; MVP]
+- Play/Pause must be accessible on the second pad bank (logical pads 17–32) on BOTH input MIDI channels 10 and 11, and via Space on the PC keyboard. All invoke the same transport action. Stop/Panic remain separate actions; do not silently substitute reset-to-start for Pause.
+- Proposed common pad: Bank2 bottom-right, MIDI note 63, on both channels. This slot is reserved in sections 19–20, including Groove modal, so it does not displace a formula length. Exact physical assignment remains a proposal; the requirement for transport on both pages is confirmed. Keep it available during formula editing.
+- Pause must release sequencer-owned sounding notes without deleting sequence data. Resume position, clock behavior while paused, and MIDI Start/Continue/Stop synchronization with the DAW still need an explicit transport decision before implementation.
+- Dispatch on key-down / positive-velocity Note On only; ignore PC key autorepeat, Note Off and zero-velocity Note On for toggling. One press must produce one transition.
+
+### PC shortcut defaults [DESIGN DEFAULTS; after current MVP]
+The user delegated selection of QWERTY duplicates. Use physical key positions so the same controls work with English and Russian layouts. These are app-local commands, active when the sequencer has focus, not while typing in text/numeric fields or capturing a new binding. Space is the MVP exception; the remaining shortcuts follow their implemented actions.
+
+| Physical PC key | Action | Context / scope |
+|---|---|---|
+| Space | Play/Pause | Transport; also available in formula modal outside text entry |
+| Q | Undo | Disabled in formula modal, as specified in section 18 |
+| W | Redo | Disabled in formula modal |
+| E | Duplicate ×2 | Selected pitch; preserve existing safe-copy rules |
+| R | Copy to next pattern | Active supported scope; no overwrite shortcut |
+| T | Audition toggle | Same action as existing physical slash shortcut |
+| Y | Previous 16-step page | Duplicate existing physical comma shortcut |
+| U | Next 16-step page | Duplicate existing physical period shortcut |
+
+No destructive Clear action is assigned to a bare letter. These duplicate existing command handlers and their validation; they do not create separate editing semantics.
+
+### Number-row formula shortcuts [after current MVP]
+Duplicate CH11 Bank2 functions using the PC number row (not numpad). Enable each binding only after its action exists; keys do not bypass modal rules or change the incoming MIDI channel.
+
+| Key | Action |
+|---|---|
+| 1 | Open Groove Formula |
+| 2 | Open Velocity Formula |
+| 3 | Open Gate Formula |
+| 4 | Humanize |
+| 5 | Scale Velocity |
+| 6 | Accent |
+| 7 | Formula Offset control |
+| 8 | Formula Length control |
+| 9 | Preview |
+| 0 | Apply |
+| Escape | Cancel formula editing |
+
+Outside a modal, formula-launch keys open their corresponding editor. Inside a modal, do not replace the active edit through keys 1–6; use Apply/Cancel first. Keys 7–8 focus the corresponding control, not a guessed parameter value. Keys 9/0/Escape act only in a compatible modal. Numeric entry in a focused field takes priority over shortcuts. This does not resolve the hardware modal pad collisions in section 20 or unspecified formula semantics.
+
+### Options → Key mappings [future builds, after current MVP]
+Add a dedicated tab with action, context, current key/modifiers and editable binding; allow clearing a binding and restoring defaults. Detect duplicate/conflicting bindings in overlapping contexts, save mappings across restarts, and display physical key positions clearly for EN/RU layouts. Include transport and the implemented editing/formula commands. Preserve the existing audition and page-navigation aliases. Unimplemented actions should be visibly unavailable. Rebinding and this tab are deferred; do not delay the current MVP to build them.

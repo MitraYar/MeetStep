@@ -155,8 +155,26 @@ settings canvas and a fixed Send/Stop/status footer. Test at normal/enlarged
 Tk scaling, including wheel and Page Up/Page Down navigation.
 
 The user supplied `docs/spec/SMK37_Sequencer_SPEC_v0.5_regenerated.md` as the
-basis of a future MVP after LED investigation. Preserve this attachment
-verbatim; it is requirements context for that future task, not authorization
+basis of a future MVP after LED investigation. Initially imported verbatim;
+section 23 now records explicitly requested updates. It is requirements
+context for that future task, not authorization
 to begin MVP development during the LED window fix. The document contains
 CONFIRMED decisions as well as OPEN/PROPOSED items; read the full decision
 logs when that task begins. Source file supplied on 2026-10-28.
+
+
+### Latest user validation and specification update, 2026-10-28
+
+This supersedes the earlier unverified Maximum-mode and proportional-brightness
+assumptions above. User reports Maximum mode works stably. No measured sub-100ms
+completion guarantee has been supplied. The fourth LED byte behaves as on/off:
+below 50% off, above 50% on; exact boundary unmeasured. 255/204 alternation does
+not produce different brightness. Use 0/255 for LED enable in future sequencer
+code. Working tester transport and original pad-one baseline are unchanged.
+
+Spec section 23 adds Play/Pause on CH10 and CH11 Bank2 and PC Space to MVP
+requirements, with common note 63 proposed (layout not yet approved). Pause
+resume/DAW-clock semantics remain open. QWERTY editing duplicates, number-row
+formula commands and an Options → Key mappings tab are recorded for builds
+after the current MVP. No sequencer or shortcut implementation is included in
+this documentation update.
